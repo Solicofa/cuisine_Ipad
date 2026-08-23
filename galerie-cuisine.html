@@ -982,7 +982,7 @@ const SLIDE_DURATION = 45;
    ===================================================================== */
 
 const CLOUDINARY_CLOUD = 'xnw6fyno';
-const CLOUDINARY_FOLDER = 'cuisine_ipad'; // dossier dans lequel tu uploaderas tes photos
+const CLOUDINARY_FOLDER = 'cuisine_ipad/photos';
 
 /* =====================================================================
    Diaporama — chargement dynamique depuis Cloudinary
@@ -1243,17 +1243,21 @@ function showSlide(index){
 
 async function loadCloudinaryPhotos(){
   try{
-    // Cloudinary liste publique via l'API de recherche (mode "liste de dossier")
-    const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/list/${CLOUDINARY_FOLDER}.json`;
-    const res = await fetch(url);
+    const auth = btoa(`978312665268393:oO1U3Ka5LihhCwi4hTKWS2DOWFw`);
+    const apiUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/resources/image?prefix=${CLOUDINARY_FOLDER}/&max_results=50&type=upload`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+
+    const res = await fetch(proxyUrl, {
+      headers:{ 'Authorization': `Basic ${auth}` }
+    });
     const data = await res.json();
     const photos = (data.resources || []).map(r =>
-      `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/w_1600,q_auto,f_auto/${r.public_id}.jpg`
+      `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/w_1600,q_auto,f_auto/${r.public_id}`
     );
     if(photos.length) buildSlides(photos);
+    else console.log('Aucune photo trouvée dans le dossier');
   }catch(e){
-    // Si le dossier n'existe pas encore, on attend
-    console.log('Cloudinary: pas encore de photos dans le dossier', CLOUDINARY_FOLDER);
+    console.log('Cloudinary erreur:', e);
   }
 }
 
