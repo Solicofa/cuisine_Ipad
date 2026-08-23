@@ -1241,23 +1241,19 @@ function showSlide(index){
   slides.forEach((s,i) => s.classList.toggle('active', i === index));
 }
 
+const PHOTOS_BIN_ID = '6a8ab4b2f5f4af5e2937dda6';
+
 async function loadCloudinaryPhotos(){
   try{
-    const auth = btoa(`978312665268393:oO1U3Ka5LihhCwi4hTKWS2DOWFw`);
-    const apiUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/resources/image?prefix=${CLOUDINARY_FOLDER}/&max_results=50&type=upload`;
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-
-    const res = await fetch(proxyUrl, {
-      headers:{ 'Authorization': `Basic ${auth}` }
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${PHOTOS_BIN_ID}/latest`, {
+      headers:{ 'X-Master-Key': JSONBIN_KEY }
     });
     const data = await res.json();
-    const photos = (data.resources || []).map(r =>
-      `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/w_1600,q_auto,f_auto/${r.public_id}`
-    );
+    const photos = data.record?.photos || [];
     if(photos.length) buildSlides(photos);
-    else console.log('Aucune photo trouvée dans le dossier');
+    else console.log('Aucune photo enregistrée');
   }catch(e){
-    console.log('Cloudinary erreur:', e);
+    console.log('Erreur chargement photos:', e);
   }
 }
 

@@ -409,6 +409,8 @@ photoInput.addEventListener('change', () => {
   photoStatus.className = 'status';
 });
 
+const PHOTOS_BIN  = '6a8ab4b2f5f4af5e2937dda6';
+
 uploadBtn.addEventListener('click', async () => {
   const files = Array.from(photoInput.files);
   if(!files.length) return;
@@ -420,6 +422,7 @@ uploadBtn.addEventListener('click', async () => {
 
   let done = 0;
   let errors = 0;
+  const newUrls = [];
 
   for(const file of files){
     try{
@@ -427,7 +430,7 @@ uploadBtn.addEventListener('click', async () => {
       formData.append('file', file);
       formData.append('upload_preset', UPLOAD_PRESET);
       formData.append('folder', FOLDER);
-      formData.append('tags', FOLDER); // tag = même nom que le dossier
+      formData.append('tags', 'cuisine_ipad');
 
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: 'POST',
@@ -435,6 +438,11 @@ uploadBtn.addEventListener('click', async () => {
       });
 
       if(!res.ok) throw new Error();
+      const data = await res.json();
+
+      // Construire l'URL optimisée
+      const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,q_auto,f_auto/${data.public_id}`;
+      newUrls.push(url);
       done++;
     }catch(e){
       errors++;
@@ -443,6 +451,30 @@ uploadBtn.addEventListener('click', async () => {
     const progress = Math.round(((done + errors) / files.length) * 100);
     progressFill.style.width = progress + '%';
     photoStatus.textContent = `Envoi de ${done + errors} / ${files.length}...`;
+  }
+
+  // Sauvegarder les URLs dans JSONbin
+  if(newUrls.length){
+    try{
+      // Récupérer les URLs existantes
+      const getRes = await fetch(`https://api.jsonbin.io/v3/b/${PHOTOS_BIN}/latest`, {
+        headers:{ 'X-Master-Key': JSONBIN_KEY }
+      });
+      const existing = await getRes.json();
+      const allPhotos = [...(existing.record?.photos || []), ...newUrls];
+
+      // Sauvegarder la liste complète
+      await fetch(`https://api.jsonbin.io/v3/b/${PHOTOS_BIN}`, {
+        method: 'PUT',
+        headers:{
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_KEY
+        },
+        body: JSON.stringify({ photos: allPhotos })
+      });
+    }catch(e){
+      console.log('Erreur sauvegarde JSONbin:', e);
+    }
   }
 
   progressBar.style.display = 'none';
