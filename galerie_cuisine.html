@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_3.html -->
+<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_5.html -->
 <html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
@@ -844,19 +844,15 @@
     <div class="meteo-bloc">
       <h2>Météo — Saint-Martin-d'Abbat</h2>
       <div class="meteo-now">
-        <div class="big-temp" id="bigTemp">19°</div>
+        <div class="big-temp" id="bigTemp">22°</div>
         <div class="meteo-divider"></div>
         <div class="meteo-detail">
           <span class="meteo-desc" id="meteoDesc">Partiellement nuageux</span>
           <span class="meteo-minmax" id="meteoMinMax">12° / 25°</span>
-          <span class="meteo-wind" id="meteoWind">Vent : 20 km/h</span>
+          <span class="meteo-wind" id="meteoWind">Vent : 22 km/h</span>
         </div>
       </div>
       <div class="meteo-hours" id="meteoHours"><div class="hour-item">
-        <span class="h-time">11h</span>
-        <span class="h-icon">⛅</span>
-        <span class="h-temp">19°</span>
-      </div><div class="hour-item">
         <span class="h-time">12h</span>
         <span class="h-icon">⛅</span>
         <span class="h-temp">22°</span>
@@ -878,6 +874,10 @@
         <span class="h-temp">25°</span>
       </div><div class="hour-item">
         <span class="h-time">17h</span>
+        <span class="h-icon">☁️</span>
+        <span class="h-temp">25°</span>
+      </div><div class="hour-item">
+        <span class="h-time">18h</span>
         <span class="h-icon">☁️</span>
         <span class="h-temp">25°</span>
       </div></div>
@@ -914,13 +914,13 @@
 
   <!-- ========== PAGE 1 : GALERIE ========== -->
   <div class="page">
-    <div class="stage" id="stage" style="background: rgb(27, 25, 23);"><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgb(217, 83, 79); font-family: Jost, sans-serif; font-size: 0.9rem; text-align: center; padding: 2rem;">Erreur: Cannot access 'JSONBIN_KEY' before initialization</div></div>
+    <div class="stage" id="stage"></div>
 
     <div class="top-right">
-      <div class="clock" id="clock">11<span>:</span>01</div>
+      <div class="clock" id="clock">12<span>:</span>12</div>
       <div class="date" id="date">Dimanche 23 août</div>
       <div class="weather">
-        <div class="temp" id="temp">19°</div>
+        <div class="temp" id="temp">22°</div>
         <div class="desc" id="desc">Partiellement nuageux</div>
       </div>
     </div>
@@ -1267,31 +1267,40 @@ function showSlide(index){
   slides.forEach((s,i) => s.classList.toggle('active', i === index));
 }
 
-const PHOTOS_BIN_ID = '6a8ab4b2f5f4af5e2937dda6';
+const TOKEN_BIN_ID = '6a8ac762da38895dfe067ce1';
+let githubToken = null;
+
+async function getGithubToken(){
+  if(githubToken) return githubToken;
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${TOKEN_BIN_ID}/latest`, {
+    headers:{ 'X-Master-Key': JSONBIN_KEY }
+  });
+  const data = await res.json();
+  githubToken = data.record?.token;
+  return githubToken;
+}
 
 async function loadCloudinaryPhotos(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${PHOTOS_BIN_ID}/latest`, {
-      headers:{ 'X-Master-Key': JSONBIN_KEY }
-    });
+    const token = await getGithubToken();
+    const res = await fetch(
+      `https://api.github.com/repos/Solicofa/cuisine_Ipad/contents/photos`,
+      { headers:{ 'Authorization': `token ${token}` } }
+    );
     const data = await res.json();
-    const photos = data.record?.photos || [];
-    if(photos.length){
-      buildSlides(photos);
-    } else {
-      // Affiche un message visible sur l'écran
+    const photos = data
+      .filter(f => f.type === 'file')
+      .map(f => `https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/${f.name}`);
+    if(photos.length) buildSlides(photos);
+    else {
       stage.style.background = '#1B1917';
       const msg = document.createElement('div');
       msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#B9B2A4;font-family:Jost,sans-serif;font-size:1rem;text-align:center;padding:2rem';
-      msg.textContent = 'Aucune photo — bin vide ou photos non chargées';
+      msg.textContent = 'Aucune photo — ajoutez des photos via le Raccourci';
       stage.appendChild(msg);
     }
   }catch(e){
-    stage.style.background = '#1B1917';
-    const msg = document.createElement('div');
-    msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#d9534f;font-family:Jost,sans-serif;font-size:0.9rem;text-align:center;padding:2rem';
-    msg.textContent = 'Erreur: ' + (e.message || 'inconnue');
-    stage.appendChild(msg);
+    console.log('Erreur chargement photos:', e);
   }
 }
 
