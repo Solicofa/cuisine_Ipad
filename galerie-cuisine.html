@@ -1241,17 +1241,19 @@ function showSlide(index){
   slides.forEach((s,i) => s.classList.toggle('active', i === index));
 }
 
-const PHOTOS_BIN_ID = '6a8ab4b2f5f4af5e2937dda6';
-
 async function loadCloudinaryPhotos(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${PHOTOS_BIN_ID}/latest`, {
-      headers:{ 'X-Master-Key': JSONBIN_KEY }
-    });
+    const res = await fetch('https://inspiring-praline-af7c93.netlify.app/.netlify/functions/photos');
     const data = await res.json();
-    const photos = data.record?.photos || [];
+    const photos = data.photos || [];
     if(photos.length) buildSlides(photos);
-    else console.log('Aucune photo enregistrée');
+    else {
+      stage.style.background = '#1B1917';
+      const msg = document.createElement('div');
+      msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#B9B2A4;font-family:Jost,sans-serif;font-size:1rem;text-align:center;padding:2rem';
+      msg.textContent = 'Aucune photo — envoie-en depuis ton iPhone';
+      stage.appendChild(msg);
+    }
   }catch(e){
     console.log('Erreur chargement photos:', e);
   }
