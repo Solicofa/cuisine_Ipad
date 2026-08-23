@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_6.html -->
+<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_7.html -->
 <html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
@@ -844,29 +844,29 @@
     <div class="meteo-bloc">
       <h2>Météo — Saint-Martin-d'Abbat</h2>
       <div class="meteo-now">
-        <div class="big-temp" id="bigTemp">22°</div>
+        <div class="big-temp" id="bigTemp">23°</div>
         <div class="meteo-divider"></div>
         <div class="meteo-detail">
-          <span class="meteo-desc" id="meteoDesc">Partiellement nuageux</span>
-          <span class="meteo-minmax" id="meteoMinMax">12° / 25°</span>
+          <span class="meteo-desc" id="meteoDesc">Couvert</span>
+          <span class="meteo-minmax" id="meteoMinMax">12° / 26°</span>
           <span class="meteo-wind" id="meteoWind">Vent : 22 km/h</span>
         </div>
       </div>
       <div class="meteo-hours" id="meteoHours"><div class="hour-item">
         <span class="h-time">12h</span>
-        <span class="h-icon">⛅</span>
+        <span class="h-icon">🌤️</span>
         <span class="h-temp">22°</span>
       </div><div class="hour-item">
         <span class="h-time">13h</span>
-        <span class="h-icon">⛅</span>
+        <span class="h-icon">☁️</span>
         <span class="h-temp">23°</span>
       </div><div class="hour-item">
         <span class="h-time">14h</span>
-        <span class="h-icon">☁️</span>
+        <span class="h-icon">⛅</span>
         <span class="h-temp">24°</span>
       </div><div class="hour-item">
         <span class="h-time">15h</span>
-        <span class="h-icon">☁️</span>
+        <span class="h-icon">⛅</span>
         <span class="h-temp">25°</span>
       </div><div class="hour-item">
         <span class="h-time">16h</span>
@@ -875,7 +875,7 @@
       </div><div class="hour-item">
         <span class="h-time">17h</span>
         <span class="h-icon">☁️</span>
-        <span class="h-temp">25°</span>
+        <span class="h-temp">26°</span>
       </div><div class="hour-item">
         <span class="h-time">18h</span>
         <span class="h-icon">☁️</span>
@@ -917,11 +917,11 @@
     <div class="stage" id="stage"><div class="slide active" style="background-image: url(&quot;https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/IMG_9014&quot;);"></div><div class="slide" style="background-image: url(&quot;https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/IMG_9014-23&quot;);"></div></div>
 
     <div class="top-right">
-      <div class="clock" id="clock">12<span>:</span>24</div>
+      <div class="clock" id="clock">12<span>:</span>31</div>
       <div class="date" id="date">Dimanche 23 août</div>
       <div class="weather">
-        <div class="temp" id="temp">22°</div>
-        <div class="desc" id="desc">Partiellement nuageux</div>
+        <div class="temp" id="temp">23°</div>
+        <div class="desc" id="desc">Couvert</div>
       </div>
     </div>
 
@@ -1275,7 +1275,7 @@ async function loadCloudinaryPhotos(){
     const data = await res.json();
     const photos = data
       .filter(f => f.type === 'file')
-      .map(f => `https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/${f.name}`);
+      .map(f => f.download_url);
     if(photos.length) buildSlides(photos);
     else {
       stage.style.background = '#1B1917';
