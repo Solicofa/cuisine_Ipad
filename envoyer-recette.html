@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Envoyer une recette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:     #F2EDE3;
+    --dim:     #B9B2A4;
+    --faint:   #6E6A60;
+    --brass:   #C8A862;
+    --void:    #121110;
+    --panel:   #1B1917;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    min-height:100%;
+    background:var(--void);
+    font-family:'Jost', sans-serif;
+    color:var(--ink);
+    padding:8vh 8vw;
+    display:flex;
+    flex-direction:column;
+    gap:4vh;
+  }
+
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:2.2rem;
+    line-height:1.1;
+  }
+
+  .rule{
+    width:2.5rem; height:1px;
+    background:var(--brass);
+  }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:0.6rem;
+  }
+
+  label{
+    font-size:0.75rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--faint);
+  }
+
+  input[type="url"]{
+    background:var(--panel);
+    border:1px solid #2a2825;
+    border-radius:10px;
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-size:1rem;
+    font-weight:300;
+    padding:1rem 1.2rem;
+    outline:none;
+    width:100%;
+    transition:border-color .25s;
+  }
+
+  input[type="url"]:focus{ border-color:var(--brass); }
+  input[type="url"]::placeholder{ color:var(--faint); }
+
+  .hint{
+    font-size:0.8rem;
+    color:var(--faint);
+    line-height:1.5;
+  }
+
+  button{
+    background:transparent;
+    border:1px solid var(--brass);
+    color:var(--brass);
+    font-family:'Jost', sans-serif;
+    font-size:0.9rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    padding:1rem;
+    border-radius:999px;
+    cursor:pointer;
+    width:100%;
+    transition:background .25s, color .25s;
+  }
+
+  button:active{ background:var(--brass); color:var(--void); }
+
+  .status{
+    text-align:center;
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1.1rem;
+    min-height:1.5rem;
+    transition:color .3s;
+  }
+
+  .status.ok{ color:#5cb85c; }
+  .status.err{ color:#d9534f; }
+</style>
+</head>
+<body>
+
+<h1>Envoyer une recette à la cuisine</h1>
+<div class="rule"></div>
+
+<div class="field">
+  <label>URL de la recette</label>
+  <input type="url" id="urlInput" placeholder="https://www.marmiton.org/..." />
+  <p class="hint">Copie l'URL depuis Safari → Partager → Copier le lien, puis colle-la ici.</p>
+</div>
+
+<button id="sendBtn">Envoyer sur l'iPad</button>
+
+<div class="status" id="status"></div>
+
+<script>
+const JSONBIN_KEY = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
+const JSONBIN_BIN = '6a8aa1e0da38895dfe062351';
+
+document.getElementById('sendBtn').addEventListener('click', async () => {
+  const url = document.getElementById('urlInput').value.trim();
+  const statusEl = document.getElementById('status');
+
+  if(!url){
+    statusEl.textContent = 'Colle une URL d\'abord.';
+    statusEl.className = 'status err';
+    return;
+  }
+
+  statusEl.textContent = 'Envoi en cours...';
+  statusEl.className = 'status';
+
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_KEY
+      },
+      body: JSON.stringify({ recette: url })
+    });
+
+    if(!res.ok) throw new Error();
+
+    statusEl.textContent = '✓ Recette envoyée ! Elle apparaît sur l\'iPad.';
+    statusEl.className = 'status ok';
+    document.getElementById('urlInput').value = '';
+  }catch(e){
+    statusEl.textContent = 'Erreur lors de l\'envoi. Réessaie.';
+    statusEl.className = 'status err';
+  }
+});
+</script>
+</body>
+</html>

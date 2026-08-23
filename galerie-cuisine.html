@@ -33,7 +33,7 @@
   /* ---------- Conteneur 3 pages ---------- */
   .pages{
     display:flex;
-    width:300vw; height:100%;
+    width:400vw; height:100%;
     transition:transform 0.45s cubic-bezier(.4,0,.2,1);
     transform:translateX(-100vw);
   }
@@ -711,6 +711,121 @@
   }
 
   .dots .d.active{ background:var(--brass); }
+  /* ===================== PAGE 3 : RECETTE ===================== */
+
+  .page-recette{
+    background:var(--void);
+    padding:5vh 6vw;
+    display:flex;
+    flex-direction:column;
+    gap:2.5vh;
+  }
+
+  .page-recette .rec-header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid #2a2825;
+    padding-bottom:1.5vh;
+  }
+
+  .page-recette h1{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:clamp(1.8rem, 4vw, 2.8rem);
+  }
+
+  .rec-refresh{
+    background:transparent;
+    border:1px solid var(--ink-faint);
+    color:var(--ink-dim);
+    font-family:'Jost', sans-serif;
+    font-size:0.75rem;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    padding:0.45rem 1rem;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .25s, color .25s;
+  }
+
+  .rec-refresh:active{ border-color:var(--brass); color:var(--brass); }
+
+  .rec-empty{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:1rem;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+
+  .rec-empty .rec-icon{ font-size:2.5rem; }
+
+  .rec-empty p{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1.2rem;
+    color:var(--ink-faint);
+  }
+
+  .rec-card{
+    flex:1;
+    background:var(--panel);
+    border-radius:16px;
+    padding:3vh 3vw;
+    display:flex;
+    flex-direction:column;
+    gap:1.5vh;
+    overflow:hidden;
+  }
+
+  .rec-card .rec-title{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400;
+    font-size:clamp(1.4rem, 3vw, 2rem);
+    color:var(--ink);
+    line-height:1.2;
+  }
+
+  .rec-card .rec-url{
+    font-size:0.75rem;
+    letter-spacing:0.1em;
+    color:var(--ink-faint);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .rec-card .rec-divider{
+    width:2rem; height:1px;
+    background:var(--brass);
+    flex-shrink:0;
+  }
+
+  .rec-open{
+    display:inline-block;
+    margin-top:auto;
+    align-self:flex-start;
+    background:transparent;
+    border:1px solid var(--brass);
+    color:var(--brass);
+    font-family:'Jost', sans-serif;
+    font-size:0.85rem;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    padding:0.7rem 1.6rem;
+    border-radius:999px;
+    text-decoration:none;
+    cursor:pointer;
+    transition:background .25s, color .25s;
+  }
+
+  .rec-open:active{ background:var(--brass); color:var(--void); }
+
 </style>
 </head>
 <body>
@@ -786,8 +901,6 @@
 
     <div class="label" id="label">
       <div class="rule"></div>
-      <div class="artist" id="artist">—</div>
-      <div class="title" id="title">—</div>
     </div>
   </div>
 
@@ -834,12 +947,25 @@
     </div>
   </div>
 
+  <!-- ========== PAGE 3 : RECETTE ========== -->
+  <div class="page page-recette">
+    <div class="rec-header">
+      <h1>Recette du moment</h1>
+      <button class="rec-refresh" id="recRefresh">↻ Actualiser</button>
+    </div>
+    <div id="recContent" class="rec-empty">
+      <div class="rec-icon">🍽️</div>
+      <p>Aucune recette envoyée pour le moment</p>
+    </div>
+  </div>
+
 </div>
 
 <div class="dots">
   <div class="d" data-page="0"></div>
   <div class="d active" data-page="1"></div>
   <div class="d" data-page="2"></div>
+  <div class="d" data-page="3"></div>
 </div>
 
 <script>
@@ -1365,7 +1491,75 @@ function stopAlarmLoop(){
 renderTimers();
 
 /* =====================================================================
-   Navigation par glissement
+   Recette (JSONbin)
+   ===================================================================== */
+
+const JSONBIN_KEY = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
+const JSONBIN_BIN = '6a8aa1e0da38895dfe062351';
+const recContentEl = document.getElementById('recContent');
+
+function getDomainName(url){
+  try{ return new URL(url).hostname.replace('www.',''); }catch(e){ return url; }
+}
+
+function getPageTitle(url){
+  // Extrait un titre lisible depuis l'URL pour les sites courants
+  try{
+    const u = new URL(url);
+    const parts = u.pathname.split('/').filter(Boolean);
+    if(parts.length){
+      return parts[parts.length-1]
+        .replace(/-/g,' ')
+        .replace(/_/g,' ')
+        .replace(/\.\w+$/, '')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+  }catch(e){}
+  return 'Voir la recette';
+}
+
+async function fetchRecette(){
+  recContentEl.innerHTML = '<div class="rec-empty"><p style="color:var(--ink-faint);font-family:\'Cormorant Garamond\',serif;font-style:italic">Chargement...</p></div>';
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    const data = await res.json();
+    const url = data.record?.recette || '';
+
+    if(!url){
+      recContentEl.innerHTML = `
+        <div class="rec-empty">
+          <div class="rec-icon">🍽️</div>
+          <p>Aucune recette envoyée pour le moment</p>
+        </div>`;
+      return;
+    }
+
+    const titre = getPageTitle(url);
+    const domaine = getDomainName(url);
+
+    recContentEl.className = 'rec-card';
+    recContentEl.innerHTML = `
+      <div class="rec-title">${titre}</div>
+      <div class="rec-url">${domaine}</div>
+      <div class="rec-divider"></div>
+      <a class="rec-open" href="${url}" target="_blank">↗ Ouvrir la recette</a>
+    `;
+  }catch(e){
+    recContentEl.innerHTML = `
+      <div class="rec-empty">
+        <div class="rec-icon">⚠️</div>
+        <p>Impossible de charger la recette</p>
+      </div>`;
+  }
+}
+
+document.getElementById('recRefresh').addEventListener('click', fetchRecette);
+fetchRecette();
+setInterval(fetchRecette, 1000 * 60 * 2); // actualisation toutes les 2 min
+
+/* =====================================================================
    ===================================================================== */
 
 const pagesEl = document.getElementById('pages');
@@ -1374,7 +1568,7 @@ let pageIndex = 1;
 let touchStartX = 0, touchStartY = 0;
 
 function goToPage(i){
-  pageIndex = Math.max(0, Math.min(2, i));
+  pageIndex = Math.max(0, Math.min(3, i));
   pagesEl.style.transform = `translateX(${-pageIndex * 100}vw)`;
   dotsEl.forEach((d,j) => d.classList.toggle('active', j === pageIndex));
 }
