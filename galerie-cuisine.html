@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_1.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>Galerie</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./Galerie_files/css2" rel="stylesheet">
 
 <style>
   :root{
@@ -30,12 +30,24 @@
     font-size:18px;
   }
 
+  /* grain subtil pour éviter le noir plat sur les pages sans photo */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    z-index:0;
+    pointer-events:none;
+    opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
   /* ---------- Conteneur 3 pages ---------- */
   .pages{
     display:flex;
     width:400vw; height:100%;
-    transition:transform 0.45s cubic-bezier(.4,0,.2,1);
+    transition:transform 0.55s cubic-bezier(.65,0,.35,1);
     transform:translateX(-100vw);
+    position:relative;
+    z-index:1;
   }
 
   .page{
@@ -62,27 +74,32 @@
     display:flex;
     align-items:baseline;
     justify-content:space-between;
-    border-bottom:1px solid #2a2825;
+    border-bottom:1px solid rgba(200,168,98,0.15);
     padding-bottom:1.5vh;
+    position:relative;
   }
 
   .infos-header h1{
     font-family:'Cormorant Garamond', serif;
     font-style:italic;
     font-weight:300;
-    font-size:clamp(1.8rem, 4vw, 2.8rem);
+    font-size:clamp(1.9rem, 4.2vw, 3rem);
+    letter-spacing:0.01em;
   }
 
   .infos-header .today-date{
-    font-size:0.8rem;
-    letter-spacing:0.25em;
+    font-size:0.78rem;
+    letter-spacing:0.28em;
     text-transform:uppercase;
     color:var(--brass);
+    font-weight:400;
   }
 
   /* ---- Bloc météo ---- */
   .meteo-bloc{
-    background:var(--panel);
+    background:linear-gradient(155deg, var(--panel), #17151300);
+    border:1px solid rgba(200,168,98,0.08);
+    box-shadow:0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.02);
     border-radius:16px;
     padding:2.5vh 2.5vw;
     display:flex;
@@ -183,7 +200,9 @@
 
   /* ---- Bloc actualités ---- */
   .news-bloc{
-    background:var(--panel);
+    background:linear-gradient(155deg, var(--panel), #17151300);
+    border:1px solid rgba(200,168,98,0.08);
+    box-shadow:0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.02);
     border-radius:16px;
     padding:2.5vh 2.5vw;
     display:flex;
@@ -238,7 +257,9 @@
   }
 
   .trajet-bloc{
-    background:var(--panel);
+    background:linear-gradient(155deg, var(--panel), #17151300);
+    border:1px solid rgba(200,168,98,0.08);
+    box-shadow:0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.02);
     border-radius:16px;
     padding:2vh 2vw;
     display:flex;
@@ -296,15 +317,31 @@
     background-position:center;
     opacity:0;
     transition:opacity 2.5s ease;
-    animation:kenburns 38s ease-in-out infinite;
+    animation:kenburns 42s ease-in-out infinite;
   }
 
   .slide.active{ opacity:1; }
 
+  .slide:nth-child(3n+1){ animation-name:kenburns; }
+  .slide:nth-child(3n+2){ animation-name:kenburns-pan-right; }
+  .slide:nth-child(3n)  { animation-name:kenburns-pan-left; }
+
   @keyframes kenburns{
-    0%   { transform:scale(1);    }
-    50%  { transform:scale(1.06); }
-    100% { transform:scale(1);    }
+    0%   { transform:scale(1)     translate(0,0); }
+    50%  { transform:scale(1.07)  translate(0,-1%); }
+    100% { transform:scale(1)     translate(0,0); }
+  }
+
+  @keyframes kenburns-pan-right{
+    0%   { transform:scale(1.04) translate(-1%,0); }
+    50%  { transform:scale(1.1)  translate(1%,-0.5%); }
+    100% { transform:scale(1.04) translate(-1%,0); }
+  }
+
+  @keyframes kenburns-pan-left{
+    0%   { transform:scale(1.04) translate(1%,0); }
+    50%  { transform:scale(1.1)  translate(-1%,0.5%); }
+    100% { transform:scale(1.04) translate(1%,0); }
   }
 
   .stage::after{
@@ -312,7 +349,8 @@
     position:absolute; inset:0;
     background:
       linear-gradient(to top,    rgba(10,9,8,.7) 0%, rgba(10,9,8,0) 35%),
-      linear-gradient(180deg, rgba(10,9,8,.75) 0%, rgba(10,9,8,.2) 22%, rgba(10,9,8,0) 42%);
+      linear-gradient(180deg, rgba(10,9,8,.75) 0%, rgba(10,9,8,.2) 22%, rgba(10,9,8,0) 42%),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.38) 100%);
     pointer-events:none;
   }
 
@@ -425,6 +463,15 @@
     display:flex;
     gap:5vw;
     min-height:0;
+    position:relative;
+  }
+
+  .today-grid::before{
+    content:"";
+    position:absolute;
+    top:0; bottom:0; left:calc(52.4% + 2.5vw);
+    width:1px;
+    background:linear-gradient(to bottom, transparent, rgba(200,168,98,0.18) 15%, rgba(200,168,98,0.18) 85%, transparent);
   }
 
   .list-col{
@@ -619,7 +666,9 @@
   }
 
   .timer-card{
-    background:var(--panel);
+    background:linear-gradient(155deg, var(--panel), #17151300);
+    border:1px solid rgba(200,168,98,0.08);
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
     border-radius:12px;
     padding:1.1rem 1.2rem;
     display:flex;
@@ -699,19 +748,28 @@
   .dots{
     position:fixed; bottom:3vh; left:50%;
     transform:translateX(-50%);
-    display:flex; gap:0.5rem;
+    display:flex; gap:0.55rem;
     z-index:10;
+    padding:0.5rem 0.8rem;
+    border-radius:999px;
+    background:rgba(10,9,8,0.35);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
   }
 
   .dots .d{
-    width:7px; height:7px;
+    width:6px; height:6px;
     border-radius:50%;
-    background:var(--ink-faint);
-    transition:background .3s ease;
+    background:rgba(242,237,227,0.35);
+    transition:background .35s ease, width .35s ease, opacity .35s ease;
     cursor:pointer;
   }
 
-  .dots .d.active{ background:var(--brass); }
+  .dots .d.active{
+    background:var(--brass);
+    width:18px;
+    border-radius:999px;
+  }
   /* ===================== PAGE 3 : RECETTE ===================== */
 
   .page-recette{
@@ -775,7 +833,9 @@
 
   .rec-card{
     flex:1;
-    background:var(--panel);
+    background:linear-gradient(155deg, var(--panel), #17151300);
+    border:1px solid rgba(200,168,98,0.08);
+    box-shadow:0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.02);
     border-radius:16px;
     padding:3vh 3vw;
     display:flex;
@@ -838,30 +898,56 @@
 
     <div class="infos-header">
       <h1>Infos du jour</h1>
-      <span class="today-date" id="infosDate">—</span>
+      <span class="today-date" id="infosDate">Dimanche 23 août</span>
     </div>
 
     <!-- Météo détaillée -->
     <div class="meteo-bloc">
       <h2>Météo — Saint-Martin-d'Abbat</h2>
       <div class="meteo-now">
-        <div class="big-temp" id="bigTemp">--°</div>
+        <div class="big-temp" id="bigTemp">25°</div>
         <div class="meteo-divider"></div>
         <div class="meteo-detail">
-          <span class="meteo-desc" id="meteoDesc">—</span>
-          <span class="meteo-minmax" id="meteoMinMax">— / —</span>
-          <span class="meteo-wind" id="meteoWind">Vent : —</span>
+          <span class="meteo-desc" id="meteoDesc">Couvert</span>
+          <span class="meteo-minmax" id="meteoMinMax">12° / 26°</span>
+          <span class="meteo-wind" id="meteoWind">Vent : 23 km/h</span>
         </div>
       </div>
-      <div class="meteo-hours" id="meteoHours"></div>
+      <div class="meteo-hours" id="meteoHours"><div class="hour-item">
+        <span class="h-time">16h</span>
+        <span class="h-icon">☁️</span>
+        <span class="h-temp">25°</span>
+      </div><div class="hour-item">
+        <span class="h-time">17h</span>
+        <span class="h-icon">☁️</span>
+        <span class="h-temp">26°</span>
+      </div><div class="hour-item">
+        <span class="h-time">18h</span>
+        <span class="h-icon">🌤️</span>
+        <span class="h-temp">25°</span>
+      </div><div class="hour-item">
+        <span class="h-time">19h</span>
+        <span class="h-icon">☁️</span>
+        <span class="h-temp">25°</span>
+      </div><div class="hour-item">
+        <span class="h-time">20h</span>
+        <span class="h-icon">☁️</span>
+        <span class="h-temp">23°</span>
+      </div><div class="hour-item">
+        <span class="h-time">21h</span>
+        <span class="h-icon">🌤️</span>
+        <span class="h-temp">21°</span>
+      </div><div class="hour-item">
+        <span class="h-time">22h</span>
+        <span class="h-icon">⛅</span>
+        <span class="h-temp">20°</span>
+      </div></div>
     </div>
 
     <!-- Actualités Le Monde -->
     <div class="news-bloc">
       <h2>Le Monde — À la une</h2>
-      <div class="news-list" id="newsList">
-        <div class="news-item"><span class="news-text" style="color:var(--ink-faint)">Chargement des actualités...</span></div>
-      </div>
+      <div class="news-list" id="newsList"><div class="news-item"><span class="news-text" style="color:var(--ink-faint)">Actualités indisponibles</span></div></div>
     </div>
 
     <!-- Trajets côte à côte -->
@@ -869,19 +955,19 @@
       <div class="trajet-bloc">
         <h2>Vers Saint-Jean-de-Braye</h2>
         <div class="trajet-time">
-          <span class="t-val" id="tval1">--</span>
+          <span class="t-val" id="tval1">21</span>
           <span class="t-unit">min</span>
         </div>
-        <span class="t-traffic" id="traffic1">Chargement...</span>
+        <span class="t-traffic" id="traffic1" style="color: rgb(92, 184, 92);">● Trafic fluide</span>
       </div>
 
       <div class="trajet-bloc">
         <h2>Vers Chécy</h2>
         <div class="trajet-time">
-          <span class="t-val" id="tval2">--</span>
+          <span class="t-val" id="tval2">16</span>
           <span class="t-unit">min</span>
         </div>
-        <span class="t-traffic" id="traffic2">Chargement...</span>
+        <span class="t-traffic" id="traffic2" style="color: rgb(92, 184, 92);">● Trafic fluide</span>
       </div>
     </div>
 
@@ -892,11 +978,11 @@
     <div class="stage" id="stage"></div>
 
     <div class="top-right">
-      <div class="clock" id="clock">--<span>:</span>--</div>
-      <div class="date" id="date">—</div>
+      <div class="clock" id="clock">16<span>:</span>20</div>
+      <div class="date" id="date">Dimanche 23 août</div>
       <div class="weather">
-        <div class="temp" id="temp">--°</div>
-        <div class="desc" id="desc">météo</div>
+        <div class="temp" id="temp">25°</div>
+        <div class="desc" id="desc">Couvert</div>
       </div>
     </div>
 
@@ -914,7 +1000,7 @@
       <div class="list-col">
         <h2>Courses &amp; Notes</h2>
         <div class="list-add">
-          <input type="text" id="newItem" placeholder="Ajouter un élément..." />
+          <input type="text" id="newItem" placeholder="Ajouter un élément...">
           <button id="addBtn">+</button>
         </div>
         <ul class="item-list" id="itemList"></ul>
@@ -939,11 +1025,9 @@
           <button id="addTimerBtn">+</button>
         </div>
 
-        <div class="presets" id="presets"></div>
+        <div class="presets" id="presets"><button>1 min</button><button>5 min</button><button>10 min</button><button>15 min</button><button>20 min</button><button>30 min</button></div>
 
-        <div class="timer-list" id="timerList">
-          <div class="timer-empty">Aucun minuteur en cours</div>
-        </div>
+        <div class="timer-list" id="timerList"><div class="timer-empty">Aucun minuteur en cours</div></div>
       </div>
     </div>
   </div>
@@ -954,9 +1038,11 @@
       <h1>Recette du moment</h1>
       <button class="rec-refresh" id="recRefresh">↻ Actualiser</button>
     </div>
-    <div id="recContent" class="rec-empty">
-      <div class="rec-icon">🍽️</div>
-      <p>Aucune recette envoyée pour le moment</p>
+    <div id="recContent" class="rec-card">
+      <div class="rec-title">Recette Gateau Au Pastis 11928</div>
+      <div class="rec-url">marmiton.org</div>
+      <div class="rec-divider"></div>
+      <a class="rec-open" href="https://www.marmiton.org/recettes/recette_gateau-au-pastis_11928.aspx" target="_blank">↗ Ouvrir la recette</a>
     </div>
   </div>
 
@@ -1624,5 +1710,6 @@ document.addEventListener('touchend', e=>{
 
 dotsEl.forEach(d=>{ d.addEventListener('click',()=>goToPage(parseInt(d.dataset.page))); });
 </script>
-</body>
-</html>
+
+
+</body></html>
