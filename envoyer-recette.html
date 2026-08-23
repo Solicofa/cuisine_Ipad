@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/envoyer-recette_2.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Cuisine — Envoi</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="./Cuisine — Envoi_files/css2" rel="stylesheet">
 <style>
   :root{
     --ink:   #F2EDE3;
@@ -310,7 +310,7 @@
 
   <div class="field">
     <label>Sélectionner des photos</label>
-    <input type="file" id="photoInput" accept="image/*" multiple />
+    <input type="file" id="photoInput" accept="image/*" multiple="">
   </div>
 
   <div class="preview-grid" id="previewGrid"></div>
@@ -319,7 +319,7 @@
     <div class="fill" id="progressFill"></div>
   </div>
 
-  <button class="btn" id="uploadBtn" disabled>Envoyer sur l'iPad</button>
+  <button class="btn" id="uploadBtn" disabled="">Envoyer sur l'iPad</button>
   <div class="status" id="photoStatus"></div>
 </div>
 
@@ -330,7 +330,7 @@
 
   <div class="field">
     <label>URL de la recette</label>
-    <input type="url" id="urlInput" placeholder="https://www.marmiton.org/..." />
+    <input type="url" id="urlInput" placeholder="https://www.marmiton.org/...">
     <p class="hint">Depuis Safari : Partager → Copier le lien, puis colle-le ici.</p>
   </div>
 
@@ -344,13 +344,11 @@
   <div class="rule"></div>
 
   <div class="courses-add">
-    <input type="text" id="courseInput" placeholder="Ajouter un article..." />
+    <input type="text" id="courseInput" placeholder="Ajouter un article...">
     <button class="add-btn" id="courseAddBtn">+</button>
   </div>
 
-  <div class="courses-list" id="coursesList">
-    <div style="color:var(--faint);font-style:italic;font-family:'Cormorant Garamond',serif;padding:1rem 0">Chargement...</div>
-  </div>
+  <div class="courses-list" id="coursesList"><div class="c-item"><span class="c-dot"></span><span class="c-text">Yaourt</span><button class="c-del">✕</button></div><div class="c-item"><span class="c-dot"></span><span class="c-text">Piles moyenne</span><button class="c-del">✕</button></div><div class="c-item"><span class="c-dot"></span><span class="c-text">Sopalin</span><button class="c-del">✕</button></div></div>
 
   <div class="courses-actions">
     <button class="btn-secondary" id="clearCheckedBtn">Supprimer cochés</button>
@@ -427,6 +425,7 @@ uploadBtn.addEventListener('click', async () => {
       formData.append('file', file);
       formData.append('upload_preset', UPLOAD_PRESET);
       formData.append('folder', FOLDER);
+      formData.append('tags', FOLDER); // tag = même nom que le dossier
 
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: 'POST',
@@ -617,5 +616,6 @@ document.querySelectorAll('.tab').forEach(tab => {
 // Chargement initial si onglet actif
 loadCourses();
 </script>
-</body>
-</html>
+
+
+</body></html>
