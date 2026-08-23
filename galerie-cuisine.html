@@ -1261,42 +1261,59 @@ loadCloudinaryPhotos();
 setInterval(loadCloudinaryPhotos, 1000 * 60 * 10); // actualisation toutes les 10 min
 
 /* =====================================================================
-   Liste éditable
+   Liste de courses (synchronisée via JSONbin)
    ===================================================================== */
 
 const itemListEl = document.getElementById('itemList');
 const newItemEl  = document.getElementById('newItem');
 const addBtnEl   = document.getElementById('addBtn');
-const STORAGE_KEY = 'galerie-cuisine-liste-v2';
+const COURSES_BIN_ID = '6a8aab1cda38895dfe06364c';
+let items = [];
 
-function loadItems(){
+async function loadItems(){
   try{
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if(saved && Array.isArray(saved)) return saved;
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}/latest`, {
+      headers:{ 'X-Master-Key': JSONBIN_KEY }
+    });
+    const data = await res.json();
+    items = data.record?.items || [];
+    renderItems();
   }catch(e){}
-  return DEFAULT_ITEMS.map(text => ({ text, checked:false }));
 }
 
-function saveItems(items){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }catch(e){} }
-
-let items = loadItems();
+async function saveItems(){
+  try{
+    await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}`, {
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key': JSONBIN_KEY
+      },
+      body: JSON.stringify({ items })
+    });
+  }catch(e){}
+}
 
 function renderItems(){
+  if(!items.length){
+    itemListEl.innerHTML = '<li style="color:var(--ink-faint);font-style:italic;font-family:\'Cormorant Garamond\',serif">Liste vide</li>';
+    return;
+  }
   itemListEl.innerHTML = '';
   items.forEach((item, i) => {
     const li = document.createElement('li');
     li.className = item.checked ? 'checked' : '';
     const dot = document.createElement('span');
     dot.className = 'dot';
-    dot.addEventListener('click', () => { items[i].checked = !items[i].checked; saveItems(items); renderItems(); });
+    dot.addEventListener('click', () => { items[i].checked = !items[i].checked; saveItems(); renderItems(); });
     const text = document.createElement('span');
     text.className = 'item-text';
     text.textContent = item.text;
-    text.addEventListener('click', () => { items[i].checked = !items[i].checked; saveItems(items); renderItems(); });
+    text.addEventListener('click', () => { items[i].checked = !items[i].checked; saveItems(); renderItems(); });
     const del = document.createElement('button');
     del.className = 'del-btn';
     del.textContent = '✕';
-    del.addEventListener('click', (e) => { e.stopPropagation(); items.splice(i, 1); saveItems(items); renderItems(); });
+    del.addEventListener('click', (e) => { e.stopPropagation(); items.splice(i, 1); saveItems(); renderItems(); });
     li.appendChild(dot); li.appendChild(text); li.appendChild(del);
     itemListEl.appendChild(li);
   });
@@ -1306,7 +1323,7 @@ function addItem(){
   const val = newItemEl.value.trim();
   if(!val) return;
   items.push({ text:val, checked:false });
-  saveItems(items);
+  saveItems();
   renderItems();
   newItemEl.value = '';
   newItemEl.focus();
@@ -1314,7 +1331,8 @@ function addItem(){
 
 addBtnEl.addEventListener('click', addItem);
 newItemEl.addEventListener('keydown', e => { if(e.key === 'Enter') addItem(); });
-renderItems();
+loadItems();
+setInterval(loadItems, 1000 * 60 * 2); // actualisation toutes les 2 min
 
 /* =====================================================================
    Minuteurs (multiples, personnalisables)

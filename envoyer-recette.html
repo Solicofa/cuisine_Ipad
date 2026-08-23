@@ -178,6 +178,121 @@
   .status.ok{ color:#5cb85c; }
   .status.err{ color:#d9534f; }
   .status.loading{ color:var(--dim); }
+
+  /* ---- Liste de courses ---- */
+  .courses-add{
+    display:flex;
+    gap:0.6rem;
+    align-items:center;
+  }
+
+  .courses-add input[type="text"]{
+    flex:1;
+    background:var(--panel);
+    border:1px solid #2a2825;
+    border-radius:10px;
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-size:0.95rem;
+    font-weight:300;
+    padding:0.9rem 1rem;
+    outline:none;
+    transition:border-color .25s;
+  }
+
+  .courses-add input[type="text"]:focus{ border-color:var(--brass); }
+  .courses-add input[type="text"]::placeholder{ color:var(--faint); }
+
+  .courses-add .add-btn{
+    background:transparent;
+    border:1px solid var(--ink-faint);
+    color:var(--dim);
+    font-size:1.3rem;
+    width:42px; height:42px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    transition:border-color .25s, color .25s;
+  }
+
+  .courses-add .add-btn:active{ border-color:var(--brass); color:var(--brass); }
+
+  .courses-list{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    max-height:55vh;
+    overflow-y:auto;
+  }
+
+  .courses-list .c-item{
+    display:flex;
+    align-items:center;
+    gap:0.8rem;
+    padding:0.9rem 0;
+    border-bottom:1px solid #222120;
+    cursor:pointer;
+  }
+
+  .courses-list .c-item:last-child{ border-bottom:none; }
+
+  .courses-list .c-dot{
+    width:20px; height:20px;
+    border:1px solid var(--faint);
+    border-radius:50%;
+    flex-shrink:0;
+    transition:border-color .25s, background .25s;
+  }
+
+  .courses-list .c-item.checked .c-dot{
+    border-color:var(--brass);
+    background:var(--brass);
+  }
+
+  .courses-list .c-text{
+    flex:1;
+    font-size:1rem;
+    transition:color .25s;
+  }
+
+  .courses-list .c-item.checked .c-text{
+    color:var(--faint);
+    text-decoration:line-through;
+  }
+
+  .courses-list .c-del{
+    background:transparent;
+    border:none;
+    color:var(--faint);
+    font-size:1rem;
+    cursor:pointer;
+    padding:0 0.2rem;
+    transition:color .2s;
+  }
+
+  .courses-list .c-del:active{ color:#d9534f; }
+
+  .courses-actions{
+    display:flex;
+    gap:0.8rem;
+  }
+
+  .btn-secondary{
+    background:transparent;
+    border:1px solid var(--faint);
+    color:var(--dim);
+    font-family:'Jost', sans-serif;
+    font-size:0.78rem;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    padding:0.7rem 1rem;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .25s, color .25s;
+  }
+
+  .btn-secondary:active{ border-color:var(--brass); color:var(--brass); }
 </style>
 </head>
 <body>
@@ -185,6 +300,7 @@
 <div class="tabs">
   <div class="tab active" data-tab="photos">📷 Photos</div>
   <div class="tab" data-tab="recette">🍽️ Recette</div>
+  <div class="tab" data-tab="courses">🛒 Courses</div>
 </div>
 
 <!-- ========== ONGLET PHOTOS ========== -->
@@ -220,6 +336,28 @@
 
   <button class="btn" id="sendBtn">Envoyer sur l'iPad</button>
   <div class="status" id="recStatus"></div>
+</div>
+
+<!-- ========== ONGLET COURSES ========== -->
+<div class="panel" id="tab-courses">
+  <h1>Liste de courses</h1>
+  <div class="rule"></div>
+
+  <div class="courses-add">
+    <input type="text" id="courseInput" placeholder="Ajouter un article..." />
+    <button class="add-btn" id="courseAddBtn">+</button>
+  </div>
+
+  <div class="courses-list" id="coursesList">
+    <div style="color:var(--faint);font-style:italic;font-family:'Cormorant Garamond',serif;padding:1rem 0">Chargement...</div>
+  </div>
+
+  <div class="courses-actions">
+    <button class="btn-secondary" id="clearCheckedBtn">Supprimer cochés</button>
+    <button class="btn-secondary" id="clearAllBtn">Tout effacer</button>
+  </div>
+
+  <div class="status" id="courseStatus"></div>
 </div>
 
 <script>
@@ -356,6 +494,128 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
     recStatus.className = 'status err';
   }
 });
+
+/* =====================================================================
+   Liste de courses → JSONbin
+   ===================================================================== */
+const COURSES_BIN  = '6a8aab1cda38895dfe06364c';
+const coursesList  = document.getElementById('coursesList');
+const courseInput  = document.getElementById('courseInput');
+const courseStatus = document.getElementById('courseStatus');
+let courses = [];
+
+async function loadCourses(){
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN}/latest`, {
+      headers:{ 'X-Master-Key': JSONBIN_KEY }
+    });
+    const data = await res.json();
+    courses = data.record?.items || [];
+    renderCourses();
+  }catch(e){
+    coursesList.innerHTML = '<div style="color:var(--faint);font-style:italic;font-family:\'Cormorant Garamond\',serif;padding:1rem 0">Erreur de chargement</div>';
+  }
+}
+
+async function saveCourses(){
+  courseStatus.textContent = '...';
+  courseStatus.className = 'status loading';
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN}`, {
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key': JSONBIN_KEY
+      },
+      body: JSON.stringify({ items: courses })
+    });
+    if(!res.ok) throw new Error();
+    courseStatus.textContent = '✓ Liste sauvegardée';
+    courseStatus.className = 'status ok';
+    setTimeout(() => { courseStatus.textContent = ''; courseStatus.className = 'status'; }, 2000);
+  }catch(e){
+    courseStatus.textContent = 'Erreur de sauvegarde';
+    courseStatus.className = 'status err';
+  }
+}
+
+function renderCourses(){
+  if(!courses.length){
+    coursesList.innerHTML = '<div style="color:var(--faint);font-style:italic;font-family:\'Cormorant Garamond\',serif;padding:1rem 0">Liste vide</div>';
+    return;
+  }
+  coursesList.innerHTML = '';
+  courses.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'c-item' + (item.checked ? ' checked' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'c-dot';
+    dot.addEventListener('click', () => {
+      courses[i].checked = !courses[i].checked;
+      renderCourses();
+      saveCourses();
+    });
+
+    const text = document.createElement('span');
+    text.className = 'c-text';
+    text.textContent = item.text;
+    text.addEventListener('click', () => {
+      courses[i].checked = !courses[i].checked;
+      renderCourses();
+      saveCourses();
+    });
+
+    const del = document.createElement('button');
+    del.className = 'c-del';
+    del.textContent = '✕';
+    del.addEventListener('click', () => {
+      courses.splice(i, 1);
+      renderCourses();
+      saveCourses();
+    });
+
+    div.appendChild(dot);
+    div.appendChild(text);
+    div.appendChild(del);
+    coursesList.appendChild(div);
+  });
+}
+
+function addCourse(){
+  const val = courseInput.value.trim();
+  if(!val) return;
+  courses.push({ text: val, checked: false });
+  courseInput.value = '';
+  renderCourses();
+  saveCourses();
+}
+
+document.getElementById('courseAddBtn').addEventListener('click', addCourse);
+courseInput.addEventListener('keydown', e => { if(e.key === 'Enter') addCourse(); });
+
+document.getElementById('clearCheckedBtn').addEventListener('click', () => {
+  courses = courses.filter(i => !i.checked);
+  renderCourses();
+  saveCourses();
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if(!confirm('Effacer toute la liste ?')) return;
+  courses = [];
+  renderCourses();
+  saveCourses();
+});
+
+// Charger la liste quand on ouvre l'onglet Courses
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if(tab.dataset.tab === 'courses') loadCourses();
+  });
+});
+
+// Chargement initial si onglet actif
+loadCourses();
 </script>
 </body>
 </html>
