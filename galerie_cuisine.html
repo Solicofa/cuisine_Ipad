@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_5.html -->
+<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_6.html -->
 <html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
@@ -914,10 +914,10 @@
 
   <!-- ========== PAGE 1 : GALERIE ========== -->
   <div class="page">
-    <div class="stage" id="stage"></div>
+    <div class="stage" id="stage"><div class="slide active" style="background-image: url(&quot;https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/IMG_9014&quot;);"></div><div class="slide" style="background-image: url(&quot;https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/photos/IMG_9014-23&quot;);"></div></div>
 
     <div class="top-right">
-      <div class="clock" id="clock">12<span>:</span>12</div>
+      <div class="clock" id="clock">12<span>:</span>24</div>
       <div class="date" id="date">Dimanche 23 août</div>
       <div class="weather">
         <div class="temp" id="temp">22°</div>
@@ -1267,25 +1267,10 @@ function showSlide(index){
   slides.forEach((s,i) => s.classList.toggle('active', i === index));
 }
 
-const TOKEN_BIN_ID = '6a8ac762da38895dfe067ce1';
-let githubToken = null;
-
-async function getGithubToken(){
-  if(githubToken) return githubToken;
-  const res = await fetch(`https://api.jsonbin.io/v3/b/${TOKEN_BIN_ID}/latest`, {
-    headers:{ 'X-Master-Key': JSONBIN_KEY }
-  });
-  const data = await res.json();
-  githubToken = data.record?.token;
-  return githubToken;
-}
-
 async function loadCloudinaryPhotos(){
   try{
-    const token = await getGithubToken();
     const res = await fetch(
-      `https://api.github.com/repos/Solicofa/cuisine_Ipad/contents/photos`,
-      { headers:{ 'Authorization': `token ${token}` } }
+      `https://api.github.com/repos/Solicofa/cuisine_Ipad/contents/photos`
     );
     const data = await res.json();
     const photos = data
