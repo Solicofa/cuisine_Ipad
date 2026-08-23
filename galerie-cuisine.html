@@ -977,17 +977,16 @@ const LATITUDE  = 47.8575;
 const LONGITUDE = 2.2694;
 const SLIDE_DURATION = 45;
 
-const ARTWORKS = [
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/052366FA-4F4F-48F1-95CB-98E58369D757.jpeg", artist:"Claude Monet", title:"Les Nymphéas" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/542F3F09-381E-4ADC-B2A9-38619DCAC034.jpeg", artist:"Katsushika Hokusai", title:"La Grande Vague de Kanagawa" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/61AA2BEF-6E2C-4535-A23A-F5649AC674EC.jpeg", artist:"Paul Signac", title:"Le Port de Saint-Tropez" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/66EDE48A-81CA-443E-A66C-223AF664CD27.jpeg", artist:"Jean-Baptiste Camille Corot", title:"Le Jardin des Tuileries" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/9AA38315-1899-437E-AE93-12188AD3BC07.jpeg", artist:"Sandro Botticelli", title:"La Naissance de Vénus" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/BDB5E62F-A187-4240-8415-DD77C163C5FC.jpeg", artist:"John Singer Sargent", title:"Le Sphinx" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/CF472F90-118B-460B-8E0F-0EFC2D91100D.jpeg", artist:"Vincent van Gogh", title:"La Nuit étoilée" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/CFC32383-DFC6-4D98-B251-5CCE15294E82.jpeg", artist:"Gustav Klimt", title:"Église à Cassone" },
-  { url:"https://raw.githubusercontent.com/Solicofa/cuisine_Ipad/main/D3840F72-DEFA-485C-82A5-B6663AC5C9DF.jpeg", artist:"Paul Gauguin", title:"La Seine au pont d'Iéna" }
-];
+/* =====================================================================
+   Configuration Cloudinary
+   ===================================================================== */
+
+const CLOUDINARY_CLOUD = 'xnw6fyno';
+const CLOUDINARY_FOLDER = 'cuisine_ipad'; // dossier dans lequel tu uploaderas tes photos
+
+/* =====================================================================
+   Diaporama — chargement dynamique depuis Cloudinary
+   ===================================================================== */
 
 const DEFAULT_ITEMS = ["Pain","Lait","Œufs","Légumes pour la semaine"];
 
@@ -1210,34 +1209,56 @@ setInterval(updateRoutes, 1000 * 60 * 5);
 
 const stage    = document.getElementById('stage');
 const labelEl  = document.getElementById('label');
-const artistEl = document.getElementById('artist');
-const titleEl  = document.getElementById('title');
 let currentSlide = 0;
 let slides = [];
+let slideTimer = null;
 
-ARTWORKS.forEach(art => {
-  const div = document.createElement('div');
-  div.className = 'slide';
-  div.style.backgroundImage = `url("${art.url}")`;
-  stage.appendChild(div);
-  slides.push(div);
-});
+function buildSlides(photos){
+  // Nettoie les slides existants
+  slides.forEach(s => s.remove());
+  slides = [];
+  if(!photos.length) return;
+
+  photos.forEach(url => {
+    const div = document.createElement('div');
+    div.className = 'slide';
+    div.style.backgroundImage = `url("${url}")`;
+    stage.appendChild(div);
+    slides.push(div);
+  });
+
+  currentSlide = 0;
+  showSlide(0);
+
+  if(slideTimer) clearInterval(slideTimer);
+  slideTimer = setInterval(() => {
+    currentSlide = (currentSlide + 1) % slides.length;
+    showSlide(currentSlide);
+  }, SLIDE_DURATION * 1000);
+}
 
 function showSlide(index){
   slides.forEach((s,i) => s.classList.toggle('active', i === index));
-  labelEl.classList.remove('active');
-  setTimeout(() => {
-    artistEl.textContent = ARTWORKS[index].artist;
-    titleEl.textContent  = ARTWORKS[index].title;
-    labelEl.classList.add('active');
-  }, 600);
 }
 
-showSlide(0);
-setInterval(() => {
-  currentSlide = (currentSlide + 1) % slides.length;
-  showSlide(currentSlide);
-}, SLIDE_DURATION * 1000);
+async function loadCloudinaryPhotos(){
+  try{
+    // Cloudinary liste publique via l'API de recherche (mode "liste de dossier")
+    const url = `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/list/${CLOUDINARY_FOLDER}.json`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const photos = (data.resources || []).map(r =>
+      `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/w_1600,q_auto,f_auto/${r.public_id}.jpg`
+    );
+    if(photos.length) buildSlides(photos);
+  }catch(e){
+    // Si le dossier n'existe pas encore, on attend
+    console.log('Cloudinary: pas encore de photos dans le dossier', CLOUDINARY_FOLDER);
+  }
+}
+
+loadCloudinaryPhotos();
+setInterval(loadCloudinaryPhotos, 1000 * 60 * 10); // actualisation toutes les 10 min
 
 /* =====================================================================
    Liste éditable

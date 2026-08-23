@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>Envoyer une recette</title>
+<title>Cuisine — Envoi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Jost:wght@300;400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:     #F2EDE3;
-    --dim:     #B9B2A4;
-    --faint:   #6E6A60;
-    --brass:   #C8A862;
-    --void:    #121110;
-    --panel:   #1B1917;
+    --ink:   #F2EDE3;
+    --dim:   #B9B2A4;
+    --faint: #6E6A60;
+    --brass: #C8A862;
+    --void:  #121110;
+    --panel: #1B1917;
   }
 
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -23,22 +23,53 @@
     background:var(--void);
     font-family:'Jost', sans-serif;
     color:var(--ink);
-    padding:8vh 8vw;
+  }
+
+  /* ---- Onglets ---- */
+  .tabs{
     display:flex;
+    border-bottom:1px solid #2a2825;
+    padding:0 8vw;
+  }
+
+  .tab{
+    flex:1;
+    padding:4vw 0;
+    text-align:center;
+    font-size:0.78rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--faint);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transition:color .25s, border-color .25s;
+  }
+
+  .tab.active{
+    color:var(--brass);
+    border-bottom-color:var(--brass);
+  }
+
+  /* ---- Contenu ---- */
+  .panel{
+    display:none;
+    padding:6vw 8vw;
     flex-direction:column;
     gap:4vh;
   }
+
+  .panel.active{ display:flex; }
 
   h1{
     font-family:'Cormorant Garamond', serif;
     font-style:italic;
     font-weight:300;
-    font-size:2.2rem;
+    font-size:1.9rem;
     line-height:1.1;
   }
 
   .rule{
-    width:2.5rem; height:1px;
+    width:2rem; height:1px;
     background:var(--brass);
   }
 
@@ -49,21 +80,22 @@
   }
 
   label{
-    font-size:0.75rem;
+    font-size:0.72rem;
     letter-spacing:0.2em;
     text-transform:uppercase;
     color:var(--faint);
   }
 
-  input[type="url"]{
+  input[type="url"],
+  input[type="file"]{
     background:var(--panel);
     border:1px solid #2a2825;
     border-radius:10px;
     color:var(--ink);
     font-family:'Jost', sans-serif;
-    font-size:1rem;
+    font-size:0.95rem;
     font-weight:300;
-    padding:1rem 1.2rem;
+    padding:0.9rem 1rem;
     outline:none;
     width:100%;
     transition:border-color .25s;
@@ -72,18 +104,39 @@
   input[type="url"]:focus{ border-color:var(--brass); }
   input[type="url"]::placeholder{ color:var(--faint); }
 
+  input[type="file"]{
+    color:var(--dim);
+    cursor:pointer;
+  }
+
   .hint{
-    font-size:0.8rem;
+    font-size:0.78rem;
     color:var(--faint);
     line-height:1.5;
   }
 
-  button{
+  /* Prévisualisation */
+  .preview-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:0.5rem;
+  }
+
+  .preview-grid img{
+    width:100%;
+    aspect-ratio:1;
+    object-fit:cover;
+    border-radius:8px;
+    opacity:0.85;
+  }
+
+  /* Bouton principal */
+  .btn{
     background:transparent;
     border:1px solid var(--brass);
     color:var(--brass);
     font-family:'Jost', sans-serif;
-    font-size:0.9rem;
+    font-size:0.85rem;
     letter-spacing:0.2em;
     text-transform:uppercase;
     padding:1rem;
@@ -93,52 +146,196 @@
     transition:background .25s, color .25s;
   }
 
-  button:active{ background:var(--brass); color:var(--void); }
+  .btn:active{ background:var(--brass); color:var(--void); }
+  .btn:disabled{ opacity:0.4; pointer-events:none; }
 
+  /* Barre de progression */
+  .progress-bar{
+    width:100%;
+    height:3px;
+    background:#2a2825;
+    border-radius:999px;
+    overflow:hidden;
+    display:none;
+  }
+
+  .progress-bar .fill{
+    height:100%;
+    background:var(--brass);
+    width:0%;
+    transition:width .3s ease;
+  }
+
+  /* Statut */
   .status{
     text-align:center;
     font-family:'Cormorant Garamond', serif;
     font-style:italic;
-    font-size:1.1rem;
+    font-size:1.05rem;
     min-height:1.5rem;
-    transition:color .3s;
   }
 
   .status.ok{ color:#5cb85c; }
   .status.err{ color:#d9534f; }
+  .status.loading{ color:var(--dim); }
 </style>
 </head>
 <body>
 
-<h1>Envoyer une recette à la cuisine</h1>
-<div class="rule"></div>
-
-<div class="field">
-  <label>URL de la recette</label>
-  <input type="url" id="urlInput" placeholder="https://www.marmiton.org/..." />
-  <p class="hint">Copie l'URL depuis Safari → Partager → Copier le lien, puis colle-la ici.</p>
+<div class="tabs">
+  <div class="tab active" data-tab="photos">📷 Photos</div>
+  <div class="tab" data-tab="recette">🍽️ Recette</div>
 </div>
 
-<button id="sendBtn">Envoyer sur l'iPad</button>
+<!-- ========== ONGLET PHOTOS ========== -->
+<div class="panel active" id="tab-photos">
+  <h1>Ajouter des photos</h1>
+  <div class="rule"></div>
 
-<div class="status" id="status"></div>
+  <div class="field">
+    <label>Sélectionner des photos</label>
+    <input type="file" id="photoInput" accept="image/*" multiple />
+  </div>
+
+  <div class="preview-grid" id="previewGrid"></div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="fill" id="progressFill"></div>
+  </div>
+
+  <button class="btn" id="uploadBtn" disabled>Envoyer sur l'iPad</button>
+  <div class="status" id="photoStatus"></div>
+</div>
+
+<!-- ========== ONGLET RECETTE ========== -->
+<div class="panel" id="tab-recette">
+  <h1>Envoyer une recette</h1>
+  <div class="rule"></div>
+
+  <div class="field">
+    <label>URL de la recette</label>
+    <input type="url" id="urlInput" placeholder="https://www.marmiton.org/..." />
+    <p class="hint">Depuis Safari : Partager → Copier le lien, puis colle-le ici.</p>
+  </div>
+
+  <button class="btn" id="sendBtn">Envoyer sur l'iPad</button>
+  <div class="status" id="recStatus"></div>
+</div>
 
 <script>
-const JSONBIN_KEY = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
-const JSONBIN_BIN = '6a8aa1e0da38895dfe062351';
+/* =====================================================================
+   Config
+   ===================================================================== */
+const CLOUD_NAME   = 'xnw6fyno';
+const UPLOAD_PRESET = 'zwrvbuwk';
+const FOLDER       = 'cuisine_ipad';
 
+const JSONBIN_KEY  = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
+const JSONBIN_BIN  = '6a8aa1e0da38895dfe062351';
+
+/* =====================================================================
+   Onglets
+   ===================================================================== */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* =====================================================================
+   Upload photos → Cloudinary
+   ===================================================================== */
+const photoInput   = document.getElementById('photoInput');
+const previewGrid  = document.getElementById('previewGrid');
+const uploadBtn    = document.getElementById('uploadBtn');
+const progressBar  = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const photoStatus  = document.getElementById('photoStatus');
+
+photoInput.addEventListener('change', () => {
+  previewGrid.innerHTML = '';
+  const files = Array.from(photoInput.files);
+  if(!files.length){ uploadBtn.disabled = true; return; }
+
+  files.forEach(file => {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    previewGrid.appendChild(img);
+  });
+
+  uploadBtn.disabled = false;
+  photoStatus.textContent = '';
+  photoStatus.className = 'status';
+});
+
+uploadBtn.addEventListener('click', async () => {
+  const files = Array.from(photoInput.files);
+  if(!files.length) return;
+
+  uploadBtn.disabled = true;
+  progressBar.style.display = 'block';
+  photoStatus.textContent = `Envoi de 0 / ${files.length}...`;
+  photoStatus.className = 'status loading';
+
+  let done = 0;
+  let errors = 0;
+
+  for(const file of files){
+    try{
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('folder', FOLDER);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if(!res.ok) throw new Error();
+      done++;
+    }catch(e){
+      errors++;
+    }
+
+    const progress = Math.round(((done + errors) / files.length) * 100);
+    progressFill.style.width = progress + '%';
+    photoStatus.textContent = `Envoi de ${done + errors} / ${files.length}...`;
+  }
+
+  progressBar.style.display = 'none';
+  progressFill.style.width = '0%';
+  uploadBtn.disabled = false;
+  photoInput.value = '';
+  previewGrid.innerHTML = '';
+
+  if(errors === 0){
+    photoStatus.textContent = `✓ ${done} photo${done > 1 ? 's' : ''} envoyée${done > 1 ? 's' : ''} !`;
+    photoStatus.className = 'status ok';
+  } else {
+    photoStatus.textContent = `${done} envoyée${done > 1 ? 's' : ''}, ${errors} erreur${errors > 1 ? 's' : ''}.`;
+    photoStatus.className = 'status err';
+  }
+});
+
+/* =====================================================================
+   Envoi recette → JSONbin
+   ===================================================================== */
 document.getElementById('sendBtn').addEventListener('click', async () => {
   const url = document.getElementById('urlInput').value.trim();
-  const statusEl = document.getElementById('status');
+  const recStatus = document.getElementById('recStatus');
 
   if(!url){
-    statusEl.textContent = 'Colle une URL d\'abord.';
-    statusEl.className = 'status err';
+    recStatus.textContent = 'Colle une URL d\'abord.';
+    recStatus.className = 'status err';
     return;
   }
 
-  statusEl.textContent = 'Envoi en cours...';
-  statusEl.className = 'status';
+  recStatus.textContent = 'Envoi en cours...';
+  recStatus.className = 'status loading';
 
   try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
@@ -151,13 +348,12 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
     });
 
     if(!res.ok) throw new Error();
-
-    statusEl.textContent = '✓ Recette envoyée ! Elle apparaît sur l\'iPad.';
-    statusEl.className = 'status ok';
+    recStatus.textContent = '✓ Recette envoyée sur l\'iPad !';
+    recStatus.className = 'status ok';
     document.getElementById('urlInput').value = '';
   }catch(e){
-    statusEl.textContent = 'Erreur lors de l\'envoi. Réessaie.';
-    statusEl.className = 'status err';
+    recStatus.textContent = 'Erreur lors de l\'envoi. Réessaie.';
+    recStatus.className = 'status err';
   }
 });
 </script>
