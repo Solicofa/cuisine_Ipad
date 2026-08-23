@@ -486,13 +486,28 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   recStatus.className = 'status loading';
 
   try{
+    // Récupérer l'historique existant
+    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    const existing = await getRes.json();
+    let history = existing.record?.history || [];
+    // Compatibilité avec l'ancien format
+    if(!history.length && existing.record?.recette){
+      history = [{ url: existing.record.recette, date: Date.now() - 1000 }];
+    }
+
+    history.push({ url, date: Date.now() });
+    // Garder les 15 dernières max
+    if(history.length > 15) history = history.slice(-15);
+
     const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'X-Master-Key': JSONBIN_KEY
       },
-      body: JSON.stringify({ recette: url })
+      body: JSON.stringify({ history })
     });
 
     if(!res.ok) throw new Error();

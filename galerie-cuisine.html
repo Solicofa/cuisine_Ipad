@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Dorian/Downloads/galerie-cuisine_1.html -->
-<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
 <title>Galerie</title>
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-<link href="./Galerie_files/css2" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
   :root{
@@ -435,6 +435,24 @@
     color:var(--ink-dim);
   }
 
+  .anecdote{
+    position:absolute; right:6vw; bottom:6vh;
+    max-width:30vw;
+    z-index:2;
+    text-align:right;
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:0.92rem;
+    line-height:1.5;
+    color:rgba(242,237,227,0.55);
+    text-shadow:0 2px 10px rgba(0,0,0,0.6);
+    opacity:0;
+    transition:opacity 1.5s ease;
+  }
+
+  .anecdote.active{ opacity:1; }
+
   /* ===================== PAGE 2 : AUJOURD'HUI ===================== */
 
   .page-today{
@@ -668,6 +686,7 @@
   .timer-card{
     background:linear-gradient(155deg, var(--panel), #17151300);
     border:1px solid rgba(200,168,98,0.08);
+    border-left:3px solid var(--brass);
     box-shadow:0 4px 16px rgba(0,0,0,0.2);
     border-radius:12px;
     padding:1.1rem 1.2rem;
@@ -677,6 +696,12 @@
     gap:1rem;
     transition:background .3s ease;
   }
+
+  .timer-card[data-hue="1"]{ border-left-color:#C8A862; }
+  .timer-card[data-hue="2"]{ border-left-color:#8FB79A; }
+  .timer-card[data-hue="3"]{ border-left-color:#9AA8C8; }
+  .timer-card[data-hue="4"]{ border-left-color:#C88F9A; }
+  .timer-card[data-hue="5"]{ border-left-color:#B4A0C8; }
 
   .timer-card.done{
     background:#2b2218;
@@ -741,6 +766,80 @@
     font-size:0.85rem;
     font-style:italic;
     font-family:'Cormorant Garamond', serif;
+  }
+
+  /* ---- Convertisseur d'unités ---- */
+  .converter-box{
+    flex-shrink:0;
+    border-top:1px solid rgba(200,168,98,0.12);
+    padding-top:1.1rem;
+  }
+
+  .converter-toggle{
+    background:transparent;
+    border:none;
+    color:var(--ink-faint);
+    font-family:'Jost', sans-serif;
+    font-size:0.78rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    cursor:pointer;
+    padding:0.3rem 0;
+    transition:color .25s;
+  }
+
+  .converter-toggle:active{ color:var(--brass); }
+
+  .converter-panel{
+    display:none;
+    flex-direction:column;
+    gap:0.8rem;
+    margin-top:0.9rem;
+  }
+
+  .converter-panel.open{ display:flex; }
+
+  .conv-row{
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+  }
+
+  .conv-row input[type="number"]{
+    width:4.5rem;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--ink-faint);
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-size:1rem;
+    font-weight:300;
+    padding:0.35rem 0.1rem;
+    outline:none;
+  }
+
+  .conv-row input[type="number"]:focus{ border-bottom-color:var(--brass); }
+
+  .conv-row select{
+    flex:1;
+    background:var(--panel);
+    border:1px solid rgba(200,168,98,0.15);
+    color:var(--ink-dim);
+    font-family:'Jost', sans-serif;
+    font-size:0.82rem;
+    padding:0.4rem 0.5rem;
+    border-radius:8px;
+    outline:none;
+  }
+
+  .conv-arrow{ color:var(--ink-faint); font-size:0.9rem; }
+
+  .conv-result{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:1.6rem;
+    color:var(--brass);
   }
 
   /* ---------- Points de navigation ---------- */
@@ -887,6 +986,51 @@
 
   .rec-open:active{ background:var(--brass); color:var(--void); }
 
+  /* ---- Historique des recettes ---- */
+  .rec-history{
+    margin-top:2.5vh;
+    display:flex;
+    flex-direction:column;
+    gap:0.7rem;
+    max-height:22vh;
+    overflow-y:auto;
+    flex-shrink:0;
+  }
+
+  .rec-history-title{
+    font-size:0.7rem;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-bottom:0.4rem;
+  }
+
+  .rec-history-item{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:1rem;
+    padding:0.7rem 0;
+    border-bottom:1px solid #201f1c;
+    cursor:pointer;
+  }
+
+  .rec-history-item:last-child{ border-bottom:none; }
+
+  .rec-history-item .rh-title{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1rem;
+    color:var(--ink-dim);
+  }
+
+  .rec-history-item .rh-date{
+    font-size:0.7rem;
+    letter-spacing:0.08em;
+    color:var(--ink-faint);
+    white-space:nowrap;
+  }
+
 </style>
 </head>
 <body>
@@ -898,56 +1042,30 @@
 
     <div class="infos-header">
       <h1>Infos du jour</h1>
-      <span class="today-date" id="infosDate">Dimanche 23 août</span>
+      <span class="today-date" id="infosDate">—</span>
     </div>
 
     <!-- Météo détaillée -->
     <div class="meteo-bloc">
       <h2>Météo — Saint-Martin-d'Abbat</h2>
       <div class="meteo-now">
-        <div class="big-temp" id="bigTemp">25°</div>
+        <div class="big-temp" id="bigTemp">--°</div>
         <div class="meteo-divider"></div>
         <div class="meteo-detail">
-          <span class="meteo-desc" id="meteoDesc">Couvert</span>
-          <span class="meteo-minmax" id="meteoMinMax">12° / 26°</span>
-          <span class="meteo-wind" id="meteoWind">Vent : 23 km/h</span>
+          <span class="meteo-desc" id="meteoDesc">—</span>
+          <span class="meteo-minmax" id="meteoMinMax">— / —</span>
+          <span class="meteo-wind" id="meteoWind">Vent : —</span>
         </div>
       </div>
-      <div class="meteo-hours" id="meteoHours"><div class="hour-item">
-        <span class="h-time">16h</span>
-        <span class="h-icon">☁️</span>
-        <span class="h-temp">25°</span>
-      </div><div class="hour-item">
-        <span class="h-time">17h</span>
-        <span class="h-icon">☁️</span>
-        <span class="h-temp">26°</span>
-      </div><div class="hour-item">
-        <span class="h-time">18h</span>
-        <span class="h-icon">🌤️</span>
-        <span class="h-temp">25°</span>
-      </div><div class="hour-item">
-        <span class="h-time">19h</span>
-        <span class="h-icon">☁️</span>
-        <span class="h-temp">25°</span>
-      </div><div class="hour-item">
-        <span class="h-time">20h</span>
-        <span class="h-icon">☁️</span>
-        <span class="h-temp">23°</span>
-      </div><div class="hour-item">
-        <span class="h-time">21h</span>
-        <span class="h-icon">🌤️</span>
-        <span class="h-temp">21°</span>
-      </div><div class="hour-item">
-        <span class="h-time">22h</span>
-        <span class="h-icon">⛅</span>
-        <span class="h-temp">20°</span>
-      </div></div>
+      <div class="meteo-hours" id="meteoHours"></div>
     </div>
 
     <!-- Actualités Le Monde -->
     <div class="news-bloc">
       <h2>Le Monde — À la une</h2>
-      <div class="news-list" id="newsList"><div class="news-item"><span class="news-text" style="color:var(--ink-faint)">Actualités indisponibles</span></div></div>
+      <div class="news-list" id="newsList">
+        <div class="news-item"><span class="news-text" style="color:var(--ink-faint)">Chargement des actualités...</span></div>
+      </div>
     </div>
 
     <!-- Trajets côte à côte -->
@@ -955,19 +1073,19 @@
       <div class="trajet-bloc">
         <h2>Vers Saint-Jean-de-Braye</h2>
         <div class="trajet-time">
-          <span class="t-val" id="tval1">21</span>
+          <span class="t-val" id="tval1">--</span>
           <span class="t-unit">min</span>
         </div>
-        <span class="t-traffic" id="traffic1" style="color: rgb(92, 184, 92);">● Trafic fluide</span>
+        <span class="t-traffic" id="traffic1">Chargement...</span>
       </div>
 
       <div class="trajet-bloc">
         <h2>Vers Chécy</h2>
         <div class="trajet-time">
-          <span class="t-val" id="tval2">16</span>
+          <span class="t-val" id="tval2">--</span>
           <span class="t-unit">min</span>
         </div>
-        <span class="t-traffic" id="traffic2" style="color: rgb(92, 184, 92);">● Trafic fluide</span>
+        <span class="t-traffic" id="traffic2">Chargement...</span>
       </div>
     </div>
 
@@ -978,17 +1096,19 @@
     <div class="stage" id="stage"></div>
 
     <div class="top-right">
-      <div class="clock" id="clock">16<span>:</span>20</div>
-      <div class="date" id="date">Dimanche 23 août</div>
+      <div class="clock" id="clock">--<span>:</span>--</div>
+      <div class="date" id="date">—</div>
       <div class="weather">
-        <div class="temp" id="temp">25°</div>
-        <div class="desc" id="desc">Couvert</div>
+        <div class="temp" id="temp">--°</div>
+        <div class="desc" id="desc">météo</div>
       </div>
     </div>
 
     <div class="label" id="label">
       <div class="rule"></div>
     </div>
+
+    <div class="anecdote" id="anecdote"></div>
   </div>
 
   <!-- ========== PAGE 2 : AUJOURD'HUI ========== -->
@@ -1000,7 +1120,7 @@
       <div class="list-col">
         <h2>Courses &amp; Notes</h2>
         <div class="list-add">
-          <input type="text" id="newItem" placeholder="Ajouter un élément...">
+          <input type="text" id="newItem" placeholder="Ajouter un élément..." />
           <button id="addBtn">+</button>
         </div>
         <ul class="item-list" id="itemList"></ul>
@@ -1025,9 +1145,24 @@
           <button id="addTimerBtn">+</button>
         </div>
 
-        <div class="presets" id="presets"><button>1 min</button><button>5 min</button><button>10 min</button><button>15 min</button><button>20 min</button><button>30 min</button></div>
+        <div class="presets" id="presets"></div>
 
-        <div class="timer-list" id="timerList"><div class="timer-empty">Aucun minuteur en cours</div></div>
+        <div class="timer-list" id="timerList">
+          <div class="timer-empty">Aucun minuteur en cours</div>
+        </div>
+
+        <div class="converter-box">
+          <button class="converter-toggle" id="convToggle">⇄ Convertisseur d'unités</button>
+          <div class="converter-panel" id="convPanel">
+            <div class="conv-row">
+              <input type="number" id="convValue" placeholder="0" value="100">
+              <select id="convFrom"></select>
+              <span class="conv-arrow">→</span>
+              <select id="convTo"></select>
+            </div>
+            <div class="conv-result" id="convResult">—</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1038,12 +1173,12 @@
       <h1>Recette du moment</h1>
       <button class="rec-refresh" id="recRefresh">↻ Actualiser</button>
     </div>
-    <div id="recContent" class="rec-card">
-      <div class="rec-title">Recette Gateau Au Pastis 11928</div>
-      <div class="rec-url">marmiton.org</div>
-      <div class="rec-divider"></div>
-      <a class="rec-open" href="https://www.marmiton.org/recettes/recette_gateau-au-pastis_11928.aspx" target="_blank">↗ Ouvrir la recette</a>
+    <div id="recContent" class="rec-empty">
+      <div class="rec-icon">🍽️</div>
+      <p>Aucune recette envoyée pour le moment</p>
     </div>
+
+    <div class="rec-history" id="recHistory"></div>
   </div>
 
 </div>
@@ -1350,6 +1485,38 @@ loadCloudinaryPhotos();
 setInterval(loadCloudinaryPhotos, 1000 * 60 * 10); // actualisation toutes les 10 min
 
 /* =====================================================================
+   Anecdote du jour (Wikipédia "Éphéméride")
+   ===================================================================== */
+
+async function loadAnecdote(){
+  const anecdoteEl = document.getElementById('anecdote');
+  try{
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+
+    const res = await fetch(`https://api.wikimedia.org/feed/v1/wikipedia/fr/onthisday/events/${mm}/${dd}`);
+    const data = await res.json();
+    const events = data.events || [];
+    if(!events.length) return;
+
+    // Choisit un événement au hasard parmi les plus anciens (souvent plus intéressants)
+    const pick = events[Math.floor(Math.random() * Math.min(events.length, 15))];
+    const year = pick.year;
+    let text = pick.text;
+    // Tronque si trop long
+    if(text.length > 140) text = text.slice(0, 137).trimEnd() + '…';
+
+    anecdoteEl.innerHTML = `${text}<br><span style="color:var(--brass)">— ${year}</span>`;
+    anecdoteEl.classList.add('active');
+  }catch(e){
+    console.log('Erreur anecdote:', e);
+  }
+}
+loadAnecdote();
+setInterval(loadAnecdote, 1000 * 60 * 60 * 6); // renouvelle toutes les 6h
+
+/* =====================================================================
    Liste de courses (synchronisée via JSONbin)
    ===================================================================== */
 
@@ -1453,7 +1620,8 @@ function createTimer(totalSeconds, label){
     remaining: totalSeconds,
     interval: null,
     isRunning: true,
-    isDone: false
+    isDone: false,
+    hue: (timerCounter % 5) + 1
   });
   renderTimers();
   runTimer(id);
@@ -1507,6 +1675,7 @@ function renderTimers(){
   timers.forEach(t => {
     const card = document.createElement('div');
     card.className = 'timer-card' + (t.isRunning ? ' running' : '') + (t.isDone ? ' done' : '');
+    card.dataset.hue = t.hue || 1;
 
     const info = document.createElement('div');
     info.className = 'tc-info';
@@ -1619,6 +1788,96 @@ function stopAlarmLoop(){
 renderTimers();
 
 /* =====================================================================
+   Convertisseur d'unités
+   ===================================================================== */
+
+const CONV_UNITS = {
+  poids: {
+    label: 'Poids',
+    units: { g:'g', kg:'kg', oz:'oz', lb:'lb' },
+    toGrams: { g:1, kg:1000, oz:28.3495, lb:453.592 }
+  },
+  volume: {
+    label: 'Volume',
+    units: { ml:'ml', l:'l', cup:'tasse (US)', tbsp:'c. à soupe', tsp:'c. à café', floz:'fl oz' },
+    toMl: { ml:1, l:1000, cup:236.588, tbsp:14.7868, tsp:4.92892, floz:29.5735 }
+  },
+  temp: {
+    label: 'Température',
+    units: { c:'°C', f:'°F' }
+  }
+};
+
+const convFromEl   = document.getElementById('convFrom');
+const convToEl     = document.getElementById('convTo');
+const convValueEl  = document.getElementById('convValue');
+const convResultEl = document.getElementById('convResult');
+const convToggleEl = document.getElementById('convToggle');
+const convPanelEl  = document.getElementById('convPanel');
+
+function populateConvSelects(){
+  const allUnits = [];
+  Object.entries(CONV_UNITS).forEach(([groupKey, group]) => {
+    Object.entries(group.units).forEach(([unitKey, unitLabel]) => {
+      allUnits.push({ value: `${groupKey}:${unitKey}`, label: `${unitLabel}` });
+    });
+  });
+  [convFromEl, convToEl].forEach(sel => {
+    sel.innerHTML = allUnits.map(u => `<option value="${u.value}">${u.label}</option>`).join('');
+  });
+  convFromEl.value = 'poids:g';
+  convToEl.value = 'poids:oz';
+}
+populateConvSelects();
+
+function convertUnits(){
+  const value = parseFloat(convValueEl.value) || 0;
+  const [fromGroup, fromUnit] = convFromEl.value.split(':');
+  const [toGroup, toUnit] = convToEl.value.split(':');
+
+  if(fromGroup !== toGroup){
+    convResultEl.textContent = 'Unités incompatibles';
+    return;
+  }
+
+  let result;
+  if(fromGroup === 'poids'){
+    const grams = value * CONV_UNITS.poids.toGrams[fromUnit];
+    result = grams / CONV_UNITS.poids.toGrams[toUnit];
+  } else if(fromGroup === 'volume'){
+    const ml = value * CONV_UNITS.volume.toMl[fromUnit];
+    result = ml / CONV_UNITS.volume.toMl[toUnit];
+  } else if(fromGroup === 'temp'){
+    if(fromUnit === toUnit) result = value;
+    else if(fromUnit === 'c') result = value * 9/5 + 32;
+    else result = (value - 32) * 5/9;
+  }
+
+  const rounded = Math.round(result * 100) / 100;
+  convResultEl.textContent = `${rounded} ${CONV_UNITS[toGroup].units[toUnit]}`;
+}
+
+convFromEl.addEventListener('change', () => {
+  // Aligne automatiquement le groupe de "à" si on change de catégorie
+  const [fromGroup] = convFromEl.value.split(':');
+  const [toGroup] = convToEl.value.split(':');
+  if(fromGroup !== toGroup){
+    const firstMatch = Array.from(convToEl.options).find(o => o.value.startsWith(fromGroup + ':'));
+    if(firstMatch) convToEl.value = firstMatch.value;
+  }
+  convertUnits();
+});
+convToEl.addEventListener('change', convertUnits);
+convValueEl.addEventListener('input', convertUnits);
+
+convToggleEl.addEventListener('click', () => {
+  convPanelEl.classList.toggle('open');
+  if(convPanelEl.classList.contains('open')) convertUnits();
+});
+
+convertUnits();
+
+/* =====================================================================
    Recette (JSONbin)
    ===================================================================== */
 
@@ -1653,33 +1912,56 @@ async function fetchRecette(){
       headers: { 'X-Master-Key': JSONBIN_KEY }
     });
     const data = await res.json();
-    const url = data.record?.recette || '';
 
-    if(!url){
+    // Compatibilité : ancien format { recette: url } ou nouveau { history: [{url,date}] }
+    let history = data.record?.history || [];
+    if(!history.length && data.record?.recette){
+      history = [{ url: data.record.recette, date: Date.now() }];
+    }
+
+    const historyEl = document.getElementById('recHistory');
+
+    if(!history.length){
+      recContentEl.className = 'rec-empty';
       recContentEl.innerHTML = `
-        <div class="rec-empty">
-          <div class="rec-icon">🍽️</div>
-          <p>Aucune recette envoyée pour le moment</p>
-        </div>`;
+        <div class="rec-icon">🍽️</div>
+        <p>Aucune recette envoyée pour le moment</p>`;
+      historyEl.innerHTML = '';
       return;
     }
 
-    const titre = getPageTitle(url);
-    const domaine = getDomainName(url);
+    const current = history[history.length - 1];
+    const titre = getPageTitle(current.url);
+    const domaine = getDomainName(current.url);
 
     recContentEl.className = 'rec-card';
     recContentEl.innerHTML = `
       <div class="rec-title">${titre}</div>
       <div class="rec-url">${domaine}</div>
       <div class="rec-divider"></div>
-      <a class="rec-open" href="${url}" target="_blank">↗ Ouvrir la recette</a>
+      <a class="rec-open" href="${current.url}" target="_blank">↗ Ouvrir la recette</a>
     `;
+
+    // Historique (hors recette actuelle), les 6 dernières
+    const previous = history.slice(0, -1).reverse().slice(0, 6);
+    if(previous.length){
+      historyEl.innerHTML = '<div class="rec-history-title">Envoyées récemment</div>' +
+        previous.map(item => {
+          const t = getPageTitle(item.url);
+          const d = item.date ? new Date(item.date).toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) : '';
+          return `<div class="rec-history-item" onclick="window.open('${item.url}','_blank')">
+            <span class="rh-title">${t}</span>
+            <span class="rh-date">${d}</span>
+          </div>`;
+        }).join('');
+    } else {
+      historyEl.innerHTML = '';
+    }
   }catch(e){
+    recContentEl.className = 'rec-empty';
     recContentEl.innerHTML = `
-      <div class="rec-empty">
-        <div class="rec-icon">⚠️</div>
-        <p>Impossible de charger la recette</p>
-      </div>`;
+      <div class="rec-icon">⚠️</div>
+      <p>Impossible de charger la recette</p>`;
   }
 }
 
@@ -1710,6 +1992,5 @@ document.addEventListener('touchend', e=>{
 
 dotsEl.forEach(d=>{ d.addEventListener('click',()=>goToPage(parseInt(d.dataset.page))); });
 </script>
-
-
-</body></html>
+</body>
+</html>
