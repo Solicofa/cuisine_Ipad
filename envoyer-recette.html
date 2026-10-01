@@ -368,8 +368,7 @@ const CLOUD_NAME   = 'xnw6fyno';
 const UPLOAD_PRESET = 'zwrvbuwk';
 const FOLDER       = 'cuisine_ipad/photos';
 
-const JSONBIN_KEY  = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
-const JSONBIN_BIN  = '6a8aa1e0da38895dfe062351';
+const FIREBASE_URL = 'https://dernierverre-a9753-default-rtdb.europe-west1.firebasedatabase.app';
 
 /* =====================================================================
    Onglets
@@ -487,26 +486,17 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
 
   try{
     // Récupérer l'historique existant
-    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY }
-    });
+    const getRes = await fetch(`${FIREBASE_URL}/recette.json`);
     const existing = await getRes.json();
-    let history = existing.record?.history || [];
-    // Compatibilité avec l'ancien format
-    if(!history.length && existing.record?.recette){
-      history = [{ url: existing.record.recette, date: Date.now() - 1000 }];
-    }
+    let history = existing?.history || [];
 
     history.push({ url, date: Date.now() });
     // Garder les 15 dernières max
     if(history.length > 15) history = history.slice(-15);
 
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
+    const res = await fetch(`${FIREBASE_URL}/recette.json`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_KEY
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ history })
     });
 
@@ -521,9 +511,8 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
 });
 
 /* =====================================================================
-   Liste de courses → JSONbin
+   Liste de courses → Firebase
    ===================================================================== */
-const COURSES_BIN  = '6a8aab1cda38895dfe06364c';
 const coursesList  = document.getElementById('coursesList');
 const courseInput  = document.getElementById('courseInput');
 const courseStatus = document.getElementById('courseStatus');
@@ -531,11 +520,9 @@ let courses = [];
 
 async function loadCourses(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN}/latest`, {
-      headers:{ 'X-Master-Key': JSONBIN_KEY }
-    });
+    const res = await fetch(`${FIREBASE_URL}/courses.json`);
     const data = await res.json();
-    courses = data.record?.items || [];
+    courses = data?.items || [];
     renderCourses();
   }catch(e){
     coursesList.innerHTML = '<div style="color:var(--faint);font-style:italic;font-family:\'Cormorant Garamond\',serif;padding:1rem 0">Erreur de chargement</div>';
@@ -545,32 +532,22 @@ async function loadCourses(){
 let saveCoursesTimer = null;
 function saveCourses(){
   // Regroupe les sauvegardes rapprochées (plusieurs coches/suppressions à la suite)
-  // en un seul appel réseau, pour éviter de déclencher la limite de requêtes JSONbin.
+  // en un seul appel réseau.
   courseStatus.textContent = '...';
   courseStatus.className = 'status loading';
   clearTimeout(saveCoursesTimer);
   saveCoursesTimer = setTimeout(() => doSaveCourses(), 600);
 }
 
-async function doSaveCourses(attempt = 0){
+async function doSaveCourses(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN}`, {
+    const res = await fetch(`${FIREBASE_URL}/courses.json`, {
       method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key': JSONBIN_KEY
-      },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ items: courses })
     });
     if(!res.ok){
-      // Sur une limite de requêtes (429) on retente une fois après une courte pause
-      if(res.status === 429 && attempt < 1){
-        await new Promise(r => setTimeout(r, 3000));
-        return doSaveCourses(attempt + 1);
-      }
-      courseStatus.textContent = res.status === 429
-        ? 'Quota JSONbin dépassé (429)'
-        : `Erreur de sauvegarde (${res.status})`;
+      courseStatus.textContent = `Erreur de sauvegarde (${res.status})`;
       courseStatus.className = 'status err';
       return;
     }

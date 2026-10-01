@@ -1198,6 +1198,7 @@
 const LATITUDE  = 47.8575;
 const LONGITUDE = 2.2694;
 const SLIDE_DURATION = 45;
+const FIREBASE_URL = 'https://dernierverre-a9753-default-rtdb.europe-west1.firebasedatabase.app';
 
 /* =====================================================================
    Configuration Cloudinary
@@ -1533,42 +1534,31 @@ setInterval(loadAnecdote, 1000 * 60 * 60 * 6); // renouvelle toutes les 6h
 const itemListEl = document.getElementById('itemList');
 const newItemEl  = document.getElementById('newItem');
 const addBtnEl   = document.getElementById('addBtn');
-const COURSES_BIN_ID = '6a8aab1cda38895dfe06364c';
 let items = [];
 
 async function loadItems(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}/latest`, {
-      headers:{ 'X-Master-Key': JSONBIN_KEY }
-    });
+    const res = await fetch(`${FIREBASE_URL}/courses.json`);
     const data = await res.json();
-    items = data.record?.items || [];
+    items = data?.items || [];
     renderItems();
   }catch(e){}
 }
 
 let saveItemsTimer = null;
 function saveItems(){
-  // Regroupe les sauvegardes rapprochées en un seul appel réseau
-  // pour économiser le quota de requêtes JSONbin.
+  // Regroupe les sauvegardes rapprochées en un seul appel réseau.
   clearTimeout(saveItemsTimer);
   saveItemsTimer = setTimeout(() => doSaveItems(), 600);
 }
 
-async function doSaveItems(attempt = 0){
+async function doSaveItems(){
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}`, {
+    await fetch(`${FIREBASE_URL}/courses.json`, {
       method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key': JSONBIN_KEY
-      },
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ items })
     });
-    if(!res.ok && res.status === 429 && attempt < 1){
-      await new Promise(r => setTimeout(r, 3000));
-      return doSaveItems(attempt + 1);
-    }
   }catch(e){}
 }
 
@@ -1900,11 +1890,9 @@ convToggleEl.addEventListener('click', () => {
 convertUnits();
 
 /* =====================================================================
-   Recette (JSONbin)
+   Recette (Firebase)
    ===================================================================== */
 
-const JSONBIN_KEY = '$2a$10$9YaBpBSOiqeKUl0kFoBFzutTh9UVYO0aij7HFswRCfw4XnNd52W6y';
-const JSONBIN_BIN = '6a8aa1e0da38895dfe062351';
 const recContentEl = document.getElementById('recContent');
 
 function getDomainName(url){
@@ -1930,16 +1918,10 @@ function getPageTitle(url){
 async function fetchRecette(){
   recContentEl.innerHTML = '<div class="rec-empty"><p style="color:var(--ink-faint);font-family:\'Cormorant Garamond\',serif;font-style:italic">Chargement...</p></div>';
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY }
-    });
+    const res = await fetch(`${FIREBASE_URL}/recette.json`);
     const data = await res.json();
 
-    // Compatibilité : ancien format { recette: url } ou nouveau { history: [{url,date}] }
-    let history = data.record?.history || [];
-    if(!history.length && data.record?.recette){
-      history = [{ url: data.record.recette, date: Date.now() }];
-    }
+    let history = data?.history || [];
 
     const historyEl = document.getElementById('recHistory');
 
