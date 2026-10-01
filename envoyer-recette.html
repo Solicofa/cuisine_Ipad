@@ -542,9 +542,17 @@ async function loadCourses(){
   }
 }
 
-async function saveCourses(){
+let saveCoursesTimer = null;
+function saveCourses(){
+  // Regroupe les sauvegardes rapprochées (plusieurs coches/suppressions à la suite)
+  // en un seul appel réseau, pour éviter de déclencher la limite de requêtes JSONbin.
   courseStatus.textContent = '...';
   courseStatus.className = 'status loading';
+  clearTimeout(saveCoursesTimer);
+  saveCoursesTimer = setTimeout(() => doSaveCourses(), 600);
+}
+
+async function doSaveCourses(attempt = 0){
   try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN}`, {
       method:'PUT',
@@ -554,12 +562,23 @@ async function saveCourses(){
       },
       body: JSON.stringify({ items: courses })
     });
-    if(!res.ok) throw new Error();
+    if(!res.ok){
+      // Sur une limite de requêtes (429) on retente une fois après une courte pause
+      if(res.status === 429 && attempt < 1){
+        await new Promise(r => setTimeout(r, 3000));
+        return doSaveCourses(attempt + 1);
+      }
+      courseStatus.textContent = res.status === 429
+        ? 'Quota JSONbin dépassé (429)'
+        : `Erreur de sauvegarde (${res.status})`;
+      courseStatus.className = 'status err';
+      return;
+    }
     courseStatus.textContent = '✓ Liste sauvegardée';
     courseStatus.className = 'status ok';
     setTimeout(() => { courseStatus.textContent = ''; courseStatus.className = 'status'; }, 2000);
   }catch(e){
-    courseStatus.textContent = 'Erreur de sauvegarde';
+    courseStatus.textContent = 'Erreur réseau';
     courseStatus.className = 'status err';
   }
 }

@@ -1547,9 +1547,17 @@ async function loadItems(){
   }catch(e){}
 }
 
-async function saveItems(){
+let saveItemsTimer = null;
+function saveItems(){
+  // Regroupe les sauvegardes rapprochées en un seul appel réseau
+  // pour économiser le quota de requêtes JSONbin.
+  clearTimeout(saveItemsTimer);
+  saveItemsTimer = setTimeout(() => doSaveItems(), 600);
+}
+
+async function doSaveItems(attempt = 0){
   try{
-    await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}`, {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${COURSES_BIN_ID}`, {
       method:'PUT',
       headers:{
         'Content-Type':'application/json',
@@ -1557,6 +1565,10 @@ async function saveItems(){
       },
       body: JSON.stringify({ items })
     });
+    if(!res.ok && res.status === 429 && attempt < 1){
+      await new Promise(r => setTimeout(r, 3000));
+      return doSaveItems(attempt + 1);
+    }
   }catch(e){}
 }
 
