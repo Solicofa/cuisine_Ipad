@@ -49,7 +49,8 @@ STYLE
 
 CONTEXTE
 Un objet « contexte » te donne la date et l'heure, la météo, la page affichée, la liste de courses, les minuteurs en cours, le menu de la semaine (« semaine » : date, jour, dîner prévu) et, si l'utilisateur cuisine, la recette en cours (« cuisine » : nom, étape, texte de l'étape, ingrédients). Utilise-le pour répondre (« qu'est-ce qu'il me manque ? », « il reste combien sur le gratin ? », « je n'ai pas de crème, je mets quoi ? »). Si « cuisine » est renseigné, réponds en priorité sur cette recette (substitutions, quantités, cuisson) en restant très bref.
-« meteo_ville » (si présent) donne la météo actuelle et des prochains jours pour une ville demandée : sers-t'en pour répondre précisément.
+« meteo_ville » (si présent) donne la météo actuelle et des prochains jours, pour une ville demandée ou pour la maison (« chez toi ») : sers-t'en pour répondre précisément (aujourd'hui, demain, les jours suivants).
+« actualites » donne les titres de la une du Monde affichés sur l'écran : pour « les infos », « les actualités », « quoi de neuf », lis brièvement les trois ou quatre premiers titres, reformulés pour l'oral.
 « recherche_web » (si présent) contient des informations récentes trouvées sur le web : appuie-toi dessus.
 Pour les questions de culture générale, de cuisine, de bricolage, de conversion ou de calcul, réponds normalement avec tes connaissances.
 « station » donne les mesures en direct de la station météo de la maison (vent corrigé, rafales, pluie du jour, température dehors, pression) : utilise-les pour « il a plu combien ? », « il y a du vent ? », « il fait combien dehors ? » ; absent si la station ne répond pas.
@@ -59,9 +60,14 @@ ACTIONS (uniquement si l'utilisateur le demande clairement)
 - remove_items : { "type":"remove_items", "items":["Farine"] }  (reprendre le nom exact présent dans la liste)
 - check_items : { "type":"check_items", "items":["Tomates"] }  (cocher comme « pris »)
 - start_timer : { "type":"start_timer", "minutes":10, "seconds":0, "label":"Pâtes" }
+- stop_timer : { "type":"stop_timer", "label":"Pâtes" }  (arrête et supprime ; label vide = le seul minuteur, "tous" = tous)
+- pause_timer : { "type":"pause_timer", "label":"Pâtes" }  /  resume_timer : { "type":"resume_timer", "label":"Pâtes" }
 - go_to_page : { "type":"go_to_page", "page":"infos" | "dehors" | "galerie" | "courses" | "semaine" | "recette" }
 - plan_menu : { "type":"plan_menu", "days":[ { "date":"2026-11-19", "title":"Lasagnes", "ingredients":["500 g de bœuf haché","12 feuilles de lasagne"] } ] }
   Pour inscrire ou proposer des dîners. « date » est au format AAAA-MM-JJ, tirée de « semaine » (« jeudi soir » = la date du jeudi de la semaine affichée, ou de la suivante si elle est passée). « title » : nom court du plat. « ingredients » : 5 à 10 lignes avec quantités pour 4 personnes (« 300 g de riz »). Si on te demande de proposer un menu, ne remplis que les jours où « diner » est null, à partir d'aujourd'hui, et varie les plats.
+RÈGLE IMPORTANTE : si ta réponse annonce que tu fais quelque chose (ajouter, retirer, cocher, lancer, arrêter, afficher, inscrire, effacer), l'action correspondante DOIT figurer dans « actions ». Sinon rien ne se passe sur l'écran. Ne dis jamais que tu l'as fait si l'action n'est pas dans « actions ».
+- clear_items : { "type":"clear_items", "checked_only": true }  (vider la liste, ou seulement les articles cochés)
+- clear_menu : { "type":"clear_menu", "dates":["2026-11-19"] }  (dates vides = toute la semaine affichée)
 Quand tu exécutes une action, ta réponse la confirme au passé composé, par exemple « C'est noté : lait et œufs sont sur ta liste. »
 
 SUGGESTION (facultatif)
@@ -124,9 +130,51 @@ async function callGemini(model, apiKey, payload, timeoutMs) {
 }
 
 
+/* ---------- Format imposé à Gemini (actions toujours bien formées) ---------- */
+const ACTION = {
+  type: 'OBJECT',
+  properties: {
+    type: { type: 'STRING', enum: ['add_items', 'remove_items', 'check_items', 'clear_items', 'start_timer', 'stop_timer', 'pause_timer', 'resume_timer', 'go_to_page', 'plan_menu', 'clear_menu'] },
+    items: { type: 'ARRAY', items: { type: 'STRING' } },
+    checked_only: { type: 'BOOLEAN' },
+    minutes: { type: 'NUMBER' }, seconds: { type: 'NUMBER' }, label: { type: 'STRING' },
+    page: { type: 'STRING', enum: ['infos', 'dehors', 'galerie', 'courses', 'semaine', 'recette'] },
+    dates: { type: 'ARRAY', items: { type: 'STRING' } },
+    days: { type: 'ARRAY', items: { type: 'OBJECT', properties: { date: { type: 'STRING' }, title: { type: 'STRING' }, ingredients: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['date', 'title'] } }
+  },
+  required: ['type']
+};
+const SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    reply: { type: 'STRING' },
+    actions: { type: 'ARRAY', items: ACTION },
+    suggestion: { type: 'OBJECT', nullable: true, properties: { type: { type: 'STRING' }, minutes: { type: 'NUMBER' }, seconds: { type: 'NUMBER' }, label: { type: 'STRING' } } }
+  },
+  required: ['reply', 'actions'],
+  propertyOrdering: ['actions', 'reply', 'suggestion']
+};
+// Accepte aussi les variantes que le modèle produit parfois
+function normActions(p) {
+  let a = p.actions != null ? p.actions : (p.action != null ? p.action : []);
+  if (!Array.isArray(a)) a = [a];
+  return a.filter(x => x && typeof x === 'object').map(x => {
+    const o = Object.assign({}, x);
+    if (!o.type && o.action) o.type = o.action;
+    if (!o.type && o.name) o.type = o.name;
+    if (o.params && typeof o.params === 'object') Object.assign(o, o.params);
+    if (typeof o.items === 'string') o.items = [o.items];
+    return o;
+  }).slice(0, 8);
+}
+
 /* ---------- Météo d'une ville (Open-Meteo, gratuit, sans clé) ---------- */
 const WMO = { 0: 'ciel dégagé', 1: 'plutôt dégagé', 2: 'partiellement nuageux', 3: 'couvert', 45: 'brouillard', 48: 'brouillard givrant', 51: 'bruine', 53: 'bruine', 55: 'bruine forte', 61: 'pluie faible', 63: 'pluie', 65: 'forte pluie', 66: 'pluie verglaçante', 67: 'pluie verglaçante', 71: 'neige faible', 73: 'neige', 75: 'forte neige', 77: 'grains de neige', 80: 'averses', 81: 'averses', 82: 'fortes averses', 85: 'averses de neige', 86: 'averses de neige', 95: 'orage', 96: 'orage avec grêle', 99: 'orage avec grêle' };
 const STOP = /^(il|elle|on|la|le|les|un|une|demain|aujourd|ce|cette|quel|quelle|quoi|combien|maison|moi|nous|chez|la-bas|ici)$/i;
+function weatherIntent(text) {
+  return /(m[ée]t[ée]o|quel temps|temps qu|pr[ée]vision|pleuvoir|pleuvra|pluie|neiger|neige|fera.t.il|va.t.il faire|il va faire|soleil|orage|gel(?:er)?\b|beau temps|temp[ée]rature (?:demain|ce|cette|pour)|chaud demain|froid demain|parapluie|manteau)/i.test(text)
+    && !/(cuir|cuisson|four\b|r[ôo]ti|g[âa]teau|recette|minuteur)/i.test(text);
+}
 function cityCandidate(text) {
   if (!/(m[ée]t[ée]o|quel temps|temps qu|temp[ée]rature|pleu|pluie|neige|neiger|soleil|fait.il (?:chaud|froid|beau)|il fait (?:combien|chaud|froid|beau|quel)|orage|vent)/i.test(text)) return null;
   if (/(cuir|cuisson|four\b|r[ôo]ti|g[âa]teau|recette|minuteur|frigo|cong[ée]lateur|eau|huile|thermom)/i.test(text)) return null;
@@ -150,8 +198,11 @@ async function fetchJson(url, ms) {
 }
 async function cityWeather(name) {
   try {
-    const g = await fetchJson('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(name), 1800);
-    const place = g && g.results && g.results[0];
+    let place;
+    if (name) {
+      const g = await fetchJson('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(name), 1800);
+      place = g && g.results && g.results[0];
+    } else place = { name: 'chez toi (Saint-Martin-d’Abbat)', latitude: 47.8575, longitude: 2.2694 };
     if (!place) return { ville: name, introuvable: true };
     const w = await fetchJson('https://api.open-meteo.com/v1/forecast?latitude=' + place.latitude + '&longitude=' + place.longitude +
       '&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&forecast_days=4&timezone=auto', 2200);
@@ -166,7 +217,7 @@ async function cityWeather(name) {
 
 /* ---------- Questions d'actualité : recherche Google via Gemini ---------- */
 function needsWeb(text) {
-  return /(actualit|nouvelles|infos? du jour|r[ée]sultats?|score|match|qui a gagn|[ée]lection|bourse|cours de l|prix d[ue] |combien co[uû]te|horaires?|ouvert|ferm[ée]|quand (?:sort|commence|a lieu|est)|derni[eè]re?s? (?:nouvelles|infos)|en ce moment dans le monde|programme t[ée]l[ée]|film|s[ée]rie|concert|festival|loto|euromillion|qui est le (?:pr[ée]sident|ministre|premier)|que se passe)/i.test(text);
+  return /(r[ée]sultats?|score|match|qui a gagn|[ée]lection|bourse|cours de l|prix d[ue] |combien co[uû]te|horaires?|ouvert|ferm[ée]|quand (?:sort|commence|a lieu|est)|derni[eè]re?s? (?:nouvelles|infos)|en ce moment dans le monde|programme t[ée]l[ée]|film|s[ée]rie|concert|festival|loto|euromillion|qui est le (?:pr[ée]sident|ministre|premier)|que se passe)/i.test(text);
 }
 async function webAnswer(model, apiKey, text, contextNow, timeoutMs) {
   const payload = {
@@ -199,7 +250,11 @@ exports.handler = async (event) => {
       tests.push({ modele: m, reflexion: th || 'aucune', statut: st, duree_ms: Date.now() - t1, message: msg });
       if (Date.now() - t0 > 8000) break;
     }
-    return reply(200, { cle: 'présente', modeles_choisis: models, tests });
+    let recherche = 'non testée';
+    if (Date.now() - t0 < 6000) {
+      try { const w = await webAnswer(models[0], key, 'Quelle est la date du jour ?', new Date().toISOString(), 3500); recherche = w ? 'ok : ' + w.slice(0, 80) : 'refusée ou vide'; } catch (e) { recherche = 'trop longue'; }
+    }
+    return reply(200, { cle: 'présente', modeles_choisis: models, tests, recherche_google: recherche });
   }
   if (event.httpMethod !== 'POST') return reply(405, { error: 'method' });
 
@@ -247,6 +302,7 @@ exports.handler = async (event) => {
       pression_hpa: Number(c.station.pression_hpa) || null,
       tendance_pression_3h: Number(c.station.tendance_pression_3h) || 0
     } : null,
+    actualites: (Array.isArray(c.actus) ? c.actus : []).slice(0, 8).map(x => cut(x, 160)),
     minuteurs: (Array.isArray(c.timers) ? c.timers : []).slice(0, 10)
       .map(t => ({
         nom: cut(t && t.label, 40),
@@ -259,6 +315,7 @@ exports.handler = async (event) => {
   // Météo d'une autre ville demandée à la voix
   const city = cityCandidate(text);
   if (city) { const cw = await cityWeather(city); if (cw) context.meteo_ville = cw; }
+  else if (weatherIntent(text)) { const cw = await cityWeather(null); if (cw) context.meteo_ville = cw; }
 
   // Derniers échanges (pour les questions de suivi)
   const history = (Array.isArray(body.history) ? body.history : []).slice(-3);
@@ -291,7 +348,8 @@ exports.handler = async (event) => {
     contents,
     generationConfig: {
       responseMimeType: 'application/json',
-      temperature: 0.5,
+      responseSchema: SCHEMA,
+      temperature: 0.4,
       maxOutputTokens: 2048
     }
   };
@@ -301,12 +359,13 @@ exports.handler = async (event) => {
     if (left() < 1500) break;
     let r;
     try {
-      for (let k = 0; k < THINK_OPTS.length; k++) {
+      for (let k = 0; k < THINK_OPTS.length + 2; k++) {
         const th = thinkingFor(model);
         if (th) payload.generationConfig.thinkingConfig = th; else delete payload.generationConfig.thinkingConfig;
         // le premier modèle a au plus 6 s, pour laisser le temps d'en essayer un plus léger
         r = await callGemini(model, apiKey, payload, Math.max(1000, (first && models.length > 1 ? Math.min(6000, left() - 2500) : left() - 300)));
         if (r.status === 400 && th) { thinkingRejected(model); continue; }
+        if (r.status === 400 && payload.generationConfig.responseSchema) { delete payload.generationConfig.responseSchema; continue; }
         break;
       }
     } catch (e) {
@@ -325,7 +384,7 @@ exports.handler = async (event) => {
       if (parsed && typeof parsed.reply === 'string') {
         return reply(200, {
           reply: cut(parsed.reply, 600),
-          actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 8) : [],
+          actions: normActions(parsed),
           suggestion: parsed.suggestion && typeof parsed.suggestion === 'object' ? parsed.suggestion : null
         });
       }
