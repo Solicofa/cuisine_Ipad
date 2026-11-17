@@ -1,0 +1,322 @@
+// Fonction Netlify : assistant vocal de la cuisine (Gemini, offre gratuite)
+// Route : /.netlify/functions/assistant
+// Variable d'environnement requise : GEMINI_API_KEY (Netlify -> Site configuration -> Environment variables)
+// Variable optionnelle : GEMINI_MODEL (pour forcer un modèle précis)
+
+// Choix du modèle : on demande à Google la liste des modèles disponibles pour la clé
+// (les noms changent souvent), puis on garde les « flash » rapides, du plus récent au plus léger.
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+let modelCache = { at: 0, list: null };
+async function pickModels(apiKey) {
+  if (process.env.GEMINI_MODEL) return [process.env.GEMINI_MODEL].concat(FALLBACK_MODELS);
+  if (modelCache.list && Date.now() - modelCache.at < 6 * 3600000) return modelCache.list;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 1500);
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': apiKey }, signal: ctl.signal });
+    clearTimeout(t);
+    const j = await r.json();
+    const names = (j.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => String(m.name || '').replace(/^models\//, ''))
+      .filter(n => /flash/.test(n) && !/(image|tts|audio|live|embed|vision|exp|thinking|8b|preview-\d{2}-\d{2})/.test(n));
+    const ver = n => { const m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+    const score = n => (/-latest$/.test(n) ? 1000 : 0) + ver(n) * 10 - (/lite/.test(n) ? 3 : 0) - (/preview/.test(n) ? 1 : 0);
+    const list = [...new Set(names.sort((x, y) => score(y) - score(x)).concat(FALLBACK_MODELS))].slice(0, 4);
+    if (names.length) modelCache = { at: Date.now(), list };
+    return list;
+  } catch (e) { return FALLBACK_MODELS; }
+}
+// Réponse rapide : on limite la « réflexion » des modèles récents (sinon ils dépassent les 10 s de Netlify)
+const noThink = new Set();   // modèles qui refusent l'option de réflexion
+function thinkingFor(model) {
+  if (noThink.has(model)) return undefined;
+  if (/2\.5/.test(model)) return { thinkingBudget: 0 };
+  return { thinkingLevel: 'low' };
+}
+
+const SYSTEM_PROMPT = `Tu es l'assistant vocal d'une cuisine familiale, affiché sur un iPad mural. Tes réponses sont LUES À VOIX HAUTE.
+
+STYLE
+- Français, tutoiement, ton chaleureux et direct.
+- 1 à 3 phrases courtes. Pas de markdown, pas de liste, pas d'émoji, pas de symboles.
+- Écris les nombres et unités comme on les dit : « dix minutes », « cent quatre-vingts degrés ».
+- Si tu n'es pas sûr, ou si l'information est récente et que tu ne peux pas la vérifier, dis-le franchement. N'invente jamais.
+
+CONTEXTE
+Un objet « contexte » te donne la date et l'heure, la météo, la page affichée, la liste de courses, les minuteurs en cours, le menu de la semaine (« semaine » : date, jour, dîner prévu) et, si l'utilisateur cuisine, la recette en cours (« cuisine » : nom, étape, texte de l'étape, ingrédients). Utilise-le pour répondre (« qu'est-ce qu'il me manque ? », « il reste combien sur le gratin ? », « je n'ai pas de crème, je mets quoi ? »). Si « cuisine » est renseigné, réponds en priorité sur cette recette (substitutions, quantités, cuisson) en restant très bref.
+« meteo_ville » (si présent) donne la météo actuelle et des prochains jours pour une ville demandée : sers-t'en pour répondre précisément.
+« recherche_web » (si présent) contient des informations récentes trouvées sur le web : appuie-toi dessus.
+Pour les questions de culture générale, de cuisine, de bricolage, de conversion ou de calcul, réponds normalement avec tes connaissances.
+« station » donne les mesures en direct de la station météo de la maison (vent corrigé, rafales, pluie du jour, température dehors, pression) : utilise-les pour « il a plu combien ? », « il y a du vent ? », « il fait combien dehors ? » ; absent si la station ne répond pas.
+
+ACTIONS (uniquement si l'utilisateur le demande clairement)
+- add_items : { "type":"add_items", "items":["Lait","Œufs"] }  (noms courts, sans article, première lettre en majuscule)
+- remove_items : { "type":"remove_items", "items":["Farine"] }  (reprendre le nom exact présent dans la liste)
+- check_items : { "type":"check_items", "items":["Tomates"] }  (cocher comme « pris »)
+- start_timer : { "type":"start_timer", "minutes":10, "seconds":0, "label":"Pâtes" }
+- go_to_page : { "type":"go_to_page", "page":"infos" | "dehors" | "galerie" | "courses" | "semaine" | "recette" }
+- plan_menu : { "type":"plan_menu", "days":[ { "date":"2026-11-19", "title":"Lasagnes", "ingredients":["500 g de bœuf haché","12 feuilles de lasagne"] } ] }
+  Pour inscrire ou proposer des dîners. « date » est au format AAAA-MM-JJ, tirée de « semaine » (« jeudi soir » = la date du jeudi de la semaine affichée, ou de la suivante si elle est passée). « title » : nom court du plat. « ingredients » : 5 à 10 lignes avec quantités pour 4 personnes (« 300 g de riz »). Si on te demande de proposer un menu, ne remplis que les jours où « diner » est null, à partir d'aujourd'hui, et varie les plats.
+Quand tu exécutes une action, ta réponse la confirme au passé composé, par exemple « C'est noté : lait et œufs sont sur ta liste. »
+
+SUGGESTION (facultatif)
+Si ta réponse donne une durée de cuisson ou d'attente, ajoute une suggestion de minuteur que l'utilisateur pourra lancer d'un toucher :
+{ "type":"start_timer", "minutes":10, "seconds":0, "label":"Œufs durs" }
+Ne la mets pas dans « actions » si l'utilisateur n'a pas demandé de lancer le minuteur.
+
+FORMAT DE SORTIE
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
+{ "reply": "texte à lire à voix haute", "actions": [ ... ], "suggestion": null }
+« actions » est un tableau (vide si aucune action). « suggestion » vaut null ou un objet start_timer.`;
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+};
+
+const reply = (statusCode, body) => ({
+  statusCode,
+  headers: { ...cors, 'Content-Type': 'application/json' },
+  body: JSON.stringify(body)
+});
+
+const cut = (s, n) => String(s == null ? '' : s).slice(0, n);
+
+function parseModelJson(raw) {
+  let txt = String(raw || '').trim();
+  txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    return JSON.parse(txt);
+  } catch (e) {
+    const a = txt.indexOf('{');
+    const b = txt.lastIndexOf('}');
+    if (a !== -1 && b > a) {
+      try { return JSON.parse(txt.slice(a, b + 1)); } catch (e2) { /* ignore */ }
+    }
+  }
+  return null;
+}
+
+async function callGemini(model, apiKey, payload, timeoutMs) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify(payload),
+        signal: ctl.signal
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+
+/* ---------- Météo d'une ville (Open-Meteo, gratuit, sans clé) ---------- */
+const WMO = { 0: 'ciel dégagé', 1: 'plutôt dégagé', 2: 'partiellement nuageux', 3: 'couvert', 45: 'brouillard', 48: 'brouillard givrant', 51: 'bruine', 53: 'bruine', 55: 'bruine forte', 61: 'pluie faible', 63: 'pluie', 65: 'forte pluie', 66: 'pluie verglaçante', 67: 'pluie verglaçante', 71: 'neige faible', 73: 'neige', 75: 'forte neige', 77: 'grains de neige', 80: 'averses', 81: 'averses', 82: 'fortes averses', 85: 'averses de neige', 86: 'averses de neige', 95: 'orage', 96: 'orage avec grêle', 99: 'orage avec grêle' };
+const STOP = /^(il|elle|on|la|le|les|un|une|demain|aujourd|ce|cette|quel|quelle|quoi|combien|maison|moi|nous|chez|la-bas|ici)$/i;
+function cityCandidate(text) {
+  if (!/(m[ée]t[ée]o|quel temps|temps qu|temp[ée]rature|pleu|pluie|neige|neiger|soleil|fait.il (?:chaud|froid|beau)|il fait (?:combien|chaud|froid|beau|quel)|orage|vent)/i.test(text)) return null;
+  if (/(cuir|cuisson|four\b|r[ôo]ti|g[âa]teau|recette|minuteur|frigo|cong[ée]lateur|eau|huile|thermom)/i.test(text)) return null;
+  const re = /(?:^|\s)(à|a|au|aux|sur|pour|dans|vers|de|en)\s+((?:la |le |les |l['’])?[A-Za-zÀ-ÿ][\wÀ-ÿ'’-]*(?:[\s-](?:sur|sous|en|le|la|les|de|du|des|lès|[A-ZÀ-Ý][\wÀ-ÿ'’-]*))*)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    let c = m[2].trim().replace(/[\s-](sur|sous|en|le|la|les|de|du|des|lès)$/i, '').replace(/[?.!,;]+$/, '');
+    const first = c.replace(/^(la |le |les |l['’])/i, '');
+    const w = first.split(/[\s-]/)[0];
+    if (STOP.test(w) || /^(demain|aujourd|semaine|week|maison|jardin|matin|soir|midi|nuit|heures?|minutes?|degr|moment|dehors|ce|cet|cette|ces|mon|ma|mes|notre|nos)$/i.test(w)) continue;
+    const capital = /^[A-ZÀ-Ý]/.test(first);
+    if (!capital && !/^(à|a|au|sur|pour)$/i.test(m[1])) continue;
+    if (first.length < 3) continue;
+    return c;
+  }
+  return null;
+}
+async function fetchJson(url, ms) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
+  try { const r = await fetch(url, { signal: ctl.signal }); return await r.json(); } finally { clearTimeout(t); }
+}
+async function cityWeather(name) {
+  try {
+    const g = await fetchJson('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(name), 1800);
+    const place = g && g.results && g.results[0];
+    if (!place) return { ville: name, introuvable: true };
+    const w = await fetchJson('https://api.open-meteo.com/v1/forecast?latitude=' + place.latitude + '&longitude=' + place.longitude +
+      '&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&forecast_days=4&timezone=auto', 2200);
+    const d = w.daily || {};
+    return {
+      ville: place.name + (place.admin1 ? ' (' + place.admin1 + ', ' + (place.country || '') + ')' : (place.country ? ' (' + place.country + ')' : '')),
+      maintenant: w.current ? { temperature: Math.round(w.current.temperature_2m), ciel: WMO[w.current.weather_code] || '', vent_kmh: Math.round(w.current.wind_speed_10m) } : null,
+      jours: (d.time || []).map((t, i) => ({ date: t, ciel: WMO[d.weather_code[i]] || '', min: Math.round(d.temperature_2m_min[i]), max: Math.round(d.temperature_2m_max[i]), pluie_mm: d.precipitation_sum[i], risque_pluie_pct: d.precipitation_probability_max ? d.precipitation_probability_max[i] : null }))
+    };
+  } catch (e) { return null; }
+}
+
+/* ---------- Questions d'actualité : recherche Google via Gemini ---------- */
+function needsWeb(text) {
+  return /(actualit|nouvelles|infos? du jour|r[ée]sultats?|score|match|qui a gagn|[ée]lection|bourse|cours de l|prix d[ue] |combien co[uû]te|horaires?|ouvert|ferm[ée]|quand (?:sort|commence|a lieu|est)|derni[eè]re?s? (?:nouvelles|infos)|en ce moment dans le monde|programme t[ée]l[ée]|film|s[ée]rie|concert|festival|loto|euromillion|qui est le (?:pr[ée]sident|ministre|premier)|que se passe)/i.test(text);
+}
+async function webAnswer(model, apiKey, text, contextNow, timeoutMs) {
+  const payload = {
+    systemInstruction: { parts: [{ text: 'Tu réponds à voix haute dans une cuisine, en français, en 1 à 3 phrases courtes, sans markdown ni liste ni symboles. Écris les nombres comme on les dit. Date et heure actuelles : ' + contextNow + '. Utilise la recherche Google pour les informations récentes. Si tu ne trouves pas, dis-le.' }] },
+    contents: [{ role: 'user', parts: [{ text }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: Object.assign({ temperature: 0.3, maxOutputTokens: 400 }, thinkingFor(model) ? { thinkingConfig: thinkingFor(model) } : {})
+  };
+  let r = await callGemini(model, apiKey, payload, timeoutMs);
+  if (r.status === 400 && payload.generationConfig.thinkingConfig) { noThink.add(model); delete payload.generationConfig.thinkingConfig; r = await callGemini(model, apiKey, payload, timeoutMs); }
+  if (r.status !== 200) return null;
+  const parts = r.data && r.data.candidates && r.data.candidates[0] && r.data.candidates[0].content && r.data.candidates[0].content.parts;
+  const raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+  return raw ? raw.replace(/[*#_`]/g, '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim() : null;
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
+  if (event.httpMethod !== 'POST') return reply(405, { error: 'method' });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return reply(500, { error: 'no_key' });
+
+  let body;
+  try {
+    if (event.body && event.body.length > 30000) return reply(413, { error: 'too_big' });
+    body = JSON.parse(event.body || '{}');
+  } catch (e) {
+    return reply(400, { error: 'bad_json' });
+  }
+
+  const text = cut(body.text, 400).trim();
+  if (!text) return reply(400, { error: 'empty' });
+
+  // Contexte du dashboard, borné pour rester léger
+  const c = body.context || {};
+  const context = {
+    maintenant: cut(c.now, 80),
+    meteo: cut(c.meteo, 60),
+    page_affichee: cut(c.page, 20),
+    liste_de_courses: (Array.isArray(c.items) ? c.items : []).slice(0, 60)
+      .map(i => ({ texte: cut(i && i.text, 60), coche: !!(i && i.checked) })),
+    semaine: (Array.isArray(c.semaine) ? c.semaine : []).slice(0, 7)
+      .map(d => ({ date: cut(d && d.date, 10), jour: cut(d && d.jour, 10), diner: d && d.diner ? cut(d.diner, 60) : null })),
+    cuisine: c.cuisine && typeof c.cuisine === 'object' ? {
+      recette: cut(c.cuisine.recette, 100),
+      personnes: Number(c.cuisine.personnes) || null,
+      etape: Number(c.cuisine.etape) || 0,
+      sur: Number(c.cuisine.sur) || 0,
+      texte_de_l_etape: cut(c.cuisine.texte, 600),
+      ingredients: (Array.isArray(c.cuisine.ingredients) ? c.cuisine.ingredients : []).slice(0, 40).map(x => cut(x, 80))
+    } : null,
+    station: c.station && typeof c.station === 'object' ? {
+      vent_kmh: Number(c.station.vent_kmh) || 0,
+      rafale_kmh: Number(c.station.rafale_kmh) || 0,
+      rafale_max_du_jour_kmh: Number(c.station.rafale_max_du_jour_kmh) || 0,
+      direction: cut(c.station.direction, 20),
+      pluie_aujourdhui_mm: Number(c.station.pluie_aujourdhui_mm) || 0,
+      pluie_en_cours: !!c.station.pluie_en_cours,
+      temperature_dehors: Number(c.station.temperature_dehors),
+      humidite_pct: Number(c.station.humidite_pct) || null,
+      pression_hpa: Number(c.station.pression_hpa) || null,
+      tendance_pression_3h: Number(c.station.tendance_pression_3h) || 0
+    } : null,
+    minuteurs: (Array.isArray(c.timers) ? c.timers : []).slice(0, 10)
+      .map(t => ({
+        nom: cut(t && t.label, 40),
+        secondes_restantes: Number(t && t.remaining) || 0,
+        en_cours: !!(t && t.running),
+        termine: !!(t && t.done)
+      }))
+  };
+
+  // Météo d'une autre ville demandée à la voix
+  const city = cityCandidate(text);
+  if (city) { const cw = await cityWeather(city); if (cw) context.meteo_ville = cw; }
+
+  // Derniers échanges (pour les questions de suivi)
+  const history = (Array.isArray(body.history) ? body.history : []).slice(-3);
+  const contents = [];
+  history.forEach(h => {
+    if (h && h.q && h.a) {
+      contents.push({ role: 'user', parts: [{ text: cut(h.q, 300) }] });
+      contents.push({ role: 'model', parts: [{ text: JSON.stringify({ reply: cut(h.a, 400), actions: [], suggestion: null }) }] });
+    }
+  });
+  contents.push({
+    role: 'user',
+    parts: [{ text: `contexte: ${JSON.stringify(context)}\n\nDemande de l'utilisateur: ${text}` }]
+  });
+
+  const t0 = Date.now(), BUDGET = 9300;            // Netlify coupe une fonction à 10 s
+  const left = () => BUDGET - (Date.now() - t0);
+  const models = await pickModels(apiKey);
+
+  // Questions d'actualité : réponse appuyée sur une recherche Google (si le modèle le permet)
+  if (needsWeb(text) && !c.cuisine) {
+    try {
+      const w = await webAnswer(models[0], apiKey, text, context.maintenant, Math.min(7000, left() - 1500));
+      if (w) return reply(200, { reply: cut(w, 600), actions: [], suggestion: null });
+    } catch (e) { /* on retombe sur la réponse normale */ }
+  }
+
+  const payload = {
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.5,
+      maxOutputTokens: 2048
+    }
+  };
+
+  let lastStatus = 0;
+  for (const model of models) {
+    if (left() < 1500) break;
+    let r;
+    payload.generationConfig.thinkingConfig = thinkingFor(model);
+    if (!payload.generationConfig.thinkingConfig) delete payload.generationConfig.thinkingConfig;
+    try {
+      r = await callGemini(model, apiKey, payload, left() - 300);
+      if (r.status === 400 && payload.generationConfig.thinkingConfig) {   // option de réflexion refusée par ce modèle : on réessaie sans
+        noThink.add(model);
+        delete payload.generationConfig.thinkingConfig;
+        if (left() < 1500) break;
+        r = await callGemini(model, apiKey, payload, left() - 300);
+      }
+    } catch (e) {
+      return reply(504, { error: 'timeout' });
+    }
+    lastStatus = r.status;
+
+    if (r.status === 200) {
+      const raw = r.data && r.data.candidates && r.data.candidates[0] &&
+        r.data.candidates[0].content && r.data.candidates[0].content.parts
+        ? r.data.candidates[0].content.parts.map(p => p.text || '').join('')
+        : '';
+      const parsed = parseModelJson(raw);
+      if (parsed && typeof parsed.reply === 'string') {
+        return reply(200, {
+          reply: cut(parsed.reply, 600),
+          actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 8) : [],
+          suggestion: parsed.suggestion && typeof parsed.suggestion === 'object' ? parsed.suggestion : null
+        });
+      }
+      // Réponse non structurée : on la lit telle quelle plutôt que d'échouer
+      if (raw.trim()) return reply(200, { reply: cut(raw.replace(/[{}"]/g, ''), 400), actions: [], suggestion: null });
+      return reply(502, { error: 'empty_answer' });
+    }
+
+    // Modèle inconnu, surcharge ou quota : on essaie le suivant de la liste
+    if ([400, 404, 429, 500, 503].includes(r.status)) continue;
+    break;
+  }
+
+  if (lastStatus === 429) return reply(429, { error: 'quota' });
+  return reply(502, { error: 'unavailable', status: lastStatus });
+};
