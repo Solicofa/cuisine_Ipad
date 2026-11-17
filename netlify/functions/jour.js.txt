@@ -29,11 +29,16 @@ async function pickModels(apiKey) {
   } catch (e) { return FALLBACK_MODELS; }
 }
 // Réponse rapide : on limite la « réflexion » des modèles récents (sinon ils dépassent les 10 s de Netlify)
-const noThink = new Set();   // modèles qui refusent l'option de réflexion
+// Réglage de « réflexion » retenu pour chaque modèle (on descend la liste si le modèle refuse une option)
+const THINK_OPTS = [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, { thinkingBudget: 0 }, null];
+const thinkIdx = new Map();
 function thinkingFor(model) {
-  if (noThink.has(model)) return undefined;
-  if (/2\.5/.test(model)) return { thinkingBudget: 0 };
-  return { thinkingLevel: 'low' };
+  const i = thinkIdx.has(model) ? thinkIdx.get(model) : (/2\.5/.test(model) ? 2 : 0);
+  return THINK_OPTS[i] || undefined;
+}
+function thinkingRejected(model) {
+  const i = thinkIdx.has(model) ? thinkIdx.get(model) : (/2\.5/.test(model) ? 2 : 0);
+  thinkIdx.set(model, Math.min(THINK_OPTS.length - 1, i + 1));
 }
 
 const cors = {
@@ -118,11 +123,16 @@ exports.handler = async (event) => {
     let left = 9300 - (Date.now() - t0);
     if (left < 1500) break;
     let r;
-    payload.generationConfig.thinkingConfig = thinkingFor(model);
-    if (!payload.generationConfig.thinkingConfig) delete payload.generationConfig.thinkingConfig;
     try {
-      r = await callGemini(model, apiKey, payload, left);
-      if (r.status === 400 && payload.generationConfig.thinkingConfig) { noThink.add(model); delete payload.generationConfig.thinkingConfig; left = 9300 - (Date.now() - t0); if (left < 1500) break; r = await callGemini(model, apiKey, payload, left); }
+      for (let k = 0; k < THINK_OPTS.length; k++) {
+        const th = thinkingFor(model);
+        if (th) payload.generationConfig.thinkingConfig = th; else delete payload.generationConfig.thinkingConfig;
+        left = 9300 - (Date.now() - t0); if (left < 1500) break;
+        r = await callGemini(model, apiKey, payload, left);
+        if (r.status === 400 && th) { thinkingRejected(model); continue; }
+        break;
+      }
+      if (!r) break;
     } catch (e) { return reply(200, { ok: false, error: 'timeout' }); }
     if (r.status === 200) {
       const cand = r.data && r.data.candidates && r.data.candidates[0];
