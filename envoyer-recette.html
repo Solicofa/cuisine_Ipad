@@ -149,6 +149,23 @@
   .btn:active{ background:var(--brass); color:var(--void); }
   .btn:disabled{ opacity:0.4; pointer-events:none; }
 
+  /* Onglet message */
+  #msgInput{
+    background:var(--panel); border:1px solid #2a2825; border-radius:10px; color:var(--ink);
+    font-family:'Cormorant Garamond', serif; font-style:italic; font-size:1.4rem; padding:0.8rem 1rem; outline:none; width:100%;
+    transition:border-color .25s;
+  }
+  #msgInput:focus{ border-color:var(--brass); }
+  #msgInput::placeholder{ color:var(--faint); }
+  .msg-quick{ display:flex; flex-direction:column; gap:0.55rem; }
+  .msg-quick .btn-secondary{ text-align:left; text-transform:none; letter-spacing:0.05em; font-size:0.9rem; }
+  .msg-opt{ display:flex; gap:0.5rem; }
+  .msg-opt button{
+    background:transparent; border:1px solid var(--faint); color:var(--dim); font-family:'Jost', sans-serif;
+    font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; padding:0.5rem 0.9rem; border-radius:999px; cursor:pointer;
+  }
+  .msg-opt button.on{ border-color:var(--brass); color:var(--brass); background:rgba(200,168,98,.1); }
+
   /* Barre de progression */
   .progress-bar{
     width:100%;
@@ -301,6 +318,7 @@
   <div class="tab active" data-tab="photos">📷 Photos</div>
   <div class="tab" data-tab="recette">🍽️ Recette</div>
   <div class="tab" data-tab="courses">🛒 Courses</div>
+  <div class="tab" data-tab="message">💬 Message</div>
 </div>
 
 <!-- ========== ONGLET PHOTOS ========== -->
@@ -358,6 +376,31 @@
   </div>
 
   <div class="status" id="courseStatus"></div>
+</div>
+
+<!-- ========== ONGLET MESSAGE ========== -->
+<div class="panel" id="tab-message">
+  <h1>Un mot pour la cuisine</h1>
+  <div class="rule"></div>
+
+  <div class="field">
+    <label>Message</label>
+    <input type="text" id="msgInput" maxlength="140" placeholder="Pense au pain" />
+  </div>
+
+  <div class="msg-quick" id="msgQuick">
+    <button type="button" class="btn-secondary">Dîner prêt</button>
+    <button type="button" class="btn-secondary">Je rentre dans 10 minutes</button>
+    <button type="button" class="btn-secondary">Appelle-moi</button>
+  </div>
+
+  <div class="msg-opt" id="msgOpt">
+    <button type="button" class="on" data-v="1">Lire à voix haute</button>
+    <button type="button" data-v="0">Silencieux</button>
+  </div>
+
+  <button class="btn" id="msgSendBtn">Envoyer à la cuisine</button>
+  <div class="status" id="msgStatus"></div>
 </div>
 
 <script>
@@ -507,6 +550,35 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   }catch(e){
     recStatus.textContent = 'Erreur lors de l\'envoi. Réessaie.';
     recStatus.className = 'status err';
+  }
+});
+
+/* =====================================================================
+   Message → Firebase (affiché plein écran sur l'iPad)
+   ===================================================================== */
+let msgSpeak = true;
+document.querySelectorAll('#msgOpt button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#msgOpt button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); msgSpeak = b.dataset.v === '1';
+}));
+document.querySelectorAll('#msgQuick button').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('msgInput').value = b.textContent;
+}));
+document.getElementById('msgSendBtn').addEventListener('click', async () => {
+  const input = document.getElementById('msgInput'), st = document.getElementById('msgStatus');
+  const text = input.value.trim();
+  if(!text){ st.textContent = 'Écris un message.'; st.className = 'status err'; return; }
+  st.textContent = 'Envoi…'; st.className = 'status loading';
+  try{
+    const res = await fetch(`${FIREBASE_URL}/message.json`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'm' + Date.now(), text, speak: msgSpeak, ts: Date.now() })
+    });
+    if(!res.ok) throw new Error();
+    st.textContent = '✓ Message envoyé à la cuisine !'; st.className = 'status ok';
+    input.value = '';
+  }catch(e){
+    st.textContent = 'Erreur lors de l\'envoi. Réessaie.'; st.className = 'status err';
   }
 });
 
