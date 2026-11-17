@@ -1610,36 +1610,36 @@
   .cz .lab{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .sun-row{ gap:.4rem; } .sun-row .t{ font-size:1.2rem; }
   .trajet-bloc h2{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.2em; }
-  @media (max-height:790px){
-    .page-infos{ padding:3vh 5vw 5.5vh; gap:1.6vh 3vw; }
-    .infos-header{ padding-bottom:1vh; }
-    .infos-header h1{ font-size:2.5rem; }
-    .meteo-bloc{ padding:2vh 2vw; gap:1.3vh; }
-    .meteo-bloc.has-chez{ gap:1.2vh; }
-    .meteo-bloc.has-chez .meteo-now .big-temp{ font-size:3.6rem; }
-    .meteo-hours{ padding-top:1.2vh; }
-    .hour-item .h-icon{ font-size:1rem; }
-    .chez{ padding-top:8px; gap:6px; }
-    .cz .val{ font-size:1.4rem; } .mx .val{ font-size:1.45rem; }
-    .meteo-extra{ padding-top:10px; }
-    .trajet-bloc{ padding:1.4vh 1.8vw; }
-    .trajet-time .t-val{ font-size:2.6rem; }
-  }
-  @media (max-height:700px){
-    .page-infos{ padding:2.4vh 5vw 5vh; gap:1.4vh 3vw; }
-    .infos-header h1{ font-size:2.1rem; }
-    .meteo-bloc{ padding:1.6vh 2vw; gap:1vh; }
-    .meteo-bloc.has-chez .meteo-now .big-temp{ font-size:3rem; }
-    .meteo-now .meteo-minmax, .meteo-now .meteo-wind{ font-size:.78rem; }
-    .meteo-hours{ padding-top:.9vh; }
-    .hour-item{ gap:.15rem; } .hour-item .h-icon{ font-size:.9rem; }
-    .chez{ padding-top:6px; gap:5px; }
-    .cz .val{ font-size:1.3rem; } .mx .val{ font-size:1.3rem; }
-    .meteo-extra{ padding-top:8px; }
-    .cz .sub, .mx .sub{ font-size:.64rem; }
-    .trajet-bloc{ padding:1.2vh 1.6vw; }
-    .trajet-time .t-val{ font-size:2.2rem; } .t-traffic{ font-size:.7rem; }
-  }
+    html.fi1 .page-infos{ padding:3vh 5vw 5.5vh; gap:1.6vh 3vw; }
+  html.fi1 .infos-header{ padding-bottom:1vh; }
+  html.fi1 .infos-header h1{ font-size:2.5rem; }
+  html.fi1 .meteo-bloc{ padding:2vh 2vw; gap:1.3vh; }
+  html.fi1 .meteo-bloc.has-chez{ gap:1.2vh; }
+  html.fi1 .meteo-bloc.has-chez .meteo-now .big-temp{ font-size:3.6rem; }
+  html.fi1 .meteo-hours{ padding-top:1.2vh; }
+  html.fit1 .hour-item .h-icon{ font-size:1rem; }
+  html.fi1 .chez{ padding-top:8px; gap:6px; }
+  html.fi1 .cz .val{ font-size:1.4rem; }
+  html.fi1 .mx .val{ font-size:1.45rem; }
+  html.fi1 .meteo-extra{ padding-top:10px; }
+  html.fi1 .trajet-bloc{ padding:1.4vh 1.8vw; }
+  html.fi1 .trajet-time .t-val{ font-size:2.6rem; }
+    html.fi2 .page-infos{ padding:2.4vh 5vw 5vh; gap:1.4vh 3vw; }
+  html.fi2 .infos-header h1{ font-size:2.1rem; }
+  html.fi2 .meteo-bloc{ padding:1.6vh 2vw; gap:1vh; }
+  html.fi2 .meteo-bloc.has-chez .meteo-now .big-temp{ font-size:3rem; }
+  html.fi2 .meteo-now .meteo-minmax, html.fi2 .meteo-now .meteo-wind{ font-size:.78rem; }
+  html.fi2 .meteo-hours{ padding-top:.9vh; }
+  html.fit2 .hour-item{ gap:.15rem; }
+  html.fit2 .hour-item .h-icon{ font-size:.9rem; }
+  html.fi2 .chez{ padding-top:6px; gap:5px; }
+  html.fi2 .cz .val{ font-size:1.3rem; }
+  html.fi2 .mx .val{ font-size:1.3rem; }
+  html.fi2 .meteo-extra{ padding-top:8px; }
+  html.fi2 .cz .sub, html.fi2 .mx .sub{ font-size:.64rem; }
+  html.fi2 .trajet-bloc{ padding:1.2vh 1.6vw; }
+  html.fi2 .trajet-time .t-val{ font-size:2.2rem; }
+  html.fi2 .t-traffic{ font-size:.7rem; }
   /* ===== Embellissements : lumière des cartes, losanges, icônes au trait, courbe, chronologie, anneaux ===== */
   .meteo-bloc, .news-bloc, .trajet-bloc, .out-pan{ position:relative; }
   .meteo-bloc, .news-bloc, .trajet-bloc, .panelbg{
@@ -1695,19 +1695,67 @@
   .page-dehors .rule2, .page-today .rule{ flex-shrink:0; }
   .dots .pgname{ position:static; margin-left:.5rem; align-self:center; line-height:1; }
   .dots .pgname:empty{ display:none; }
-  @media (max-height:790px){
-    .slot{ padding-top:.75rem; padding-bottom:.75rem; }
-    .tl{ margin-top:.4rem; }
-    .page-today .rule{ margin-bottom:2vh; }
-    .timer-list{ min-height:76px; flex:1 1 auto; }
-    .smart{ padding:.6rem .9rem .7rem; margin-top:.6rem; }
-    .smart .st{ font-size:1.1rem; margin:.2rem 0 .5rem; }
-    .smart .sb > *{ font-size:.66rem !important; padding:.5rem 1rem !important; }
-    .timer-col{ gap:.9rem; }
-    .timer-card{ padding:.6rem .9rem; }
-    .timer-card .tc-ring{ width:46px; height:46px; margin-right:12px; }
-    .timer-card .tc-time{ font-size:1.8rem; }
-  }
+    html.fd1 .slot{ padding-top:.75rem; padding-bottom:.75rem; }
+  html.fd1 .tl{ margin-top:.4rem; }
+  html.fit1 .page-today .rule{ margin-bottom:2vh; }
+  html.fit1 .timer-list{ min-height:76px; flex:1 1 auto; }
+  html.fit1 .smart{ padding:.6rem .9rem .7rem; margin-top:.6rem; }
+  html.fit1 .smart .st{ font-size:1.1rem; margin:.2rem 0 .5rem; }
+  html.fit1 .smart .sb > *{ font-size:.66rem !important; padding:.5rem 1rem !important; }
+  html.fit1 .timer-col{ gap:.9rem; }
+  html.fit1 .timer-card{ padding:.6rem .9rem; }
+  html.fit1 .timer-card .tc-ring{ width:46px; height:46px; margin-right:12px; }
+  html.fit1 .timer-card .tc-time{ font-size:1.8rem; }
+
+  /* ===== Ajustement automatique à la hauteur réelle (classes posées par autoFit) ===== */
+  html.fd1 .page-dehors{ padding:28px 51px 52px; }
+  html.fd1 .page-dehors h1{ font-size:2.6rem; margin-bottom:.2rem; }
+  html.fd1 .page-dehors .rule2{ margin-bottom:12px; }
+  html.fd1 .out-pan{ padding:14px 22px 12px; }
+  html.fd1 .out-hist{ margin-top:12px; }
+  html.fd1 .out-hist svg{ height:46px !important; }
+  html.fd2 .page-dehors{ padding:20px 46px 46px; }
+  html.fd2 .page-dehors h1{ font-size:2.2rem; }
+  html.fd2 .out-grid{ gap:16px; }
+  html.fd2 .slot .n{ font-size:1.35rem; }
+  html.fd2 .big-say{ font-size:1.7rem; margin:.35rem 0 .25rem; }
+  html.fd2 .recs{ margin-top:8px; }
+  html.fd2 .rec .val{ font-size:1.5rem; }
+  html.fd2 .out-hist svg{ height:38px !important; }
+  html.fi3 .page-infos{ padding:1.6vh 4.5vw 4.4vh; gap:1vh 2.6vw; }
+  html.fi3 .infos-header{ padding-bottom:.5vh; }
+  html.fi3 .infos-header h1{ font-size:1.8rem; }
+  html.fi3 .meteo-bloc{ padding:1.1vh 1.8vw; gap:.6vh; }
+  html.fi3 .meteo-bloc.has-chez{ gap:.6vh; }
+  html.fi3 .meteo-bloc.has-chez .meteo-now .big-temp{ font-size:2.3rem; }
+  html.fi3 .now-wi .wi{ width:30px; height:30px; }
+  html.fi3 .meteo-now .meteo-detail{ gap:0; }
+  html.fi3 .meteo-now .meteo-wind{ display:none; }
+  html.fi3 .curve .wi{ width:16px; height:16px; }
+  html.fi3 .curve .ic{ margin-top:2px; }
+  html.fi3 .curve svg.cv{ height:28px; }
+  html.fi3 .curve .tt{ font-size:.95rem; }
+  html.fi3 .chez{ padding-top:4px; gap:3px; }
+  html.fi3 .cz .val, html.fi3 .mx .val{ font-size:1.1rem; }
+  html.fi3 .cz .sub, html.fi3 .mx .sub{ font-size:.58rem; }
+  html.fi3 .mx .scale{ margin-top:0; }
+  html.fi3 .meteo-extra{ padding-top:5px; }
+  html.fi3 .sun-arc{ height:10px; }
+  html.fi3 .sun-row .t{ font-size:1rem; }
+  html.fi3 .trajet-bloc{ padding:.8vh 1.4vw; gap:0; }
+  html.fi3 .trajet-time .t-val{ font-size:1.7rem; }
+  html.fi3 .tr-bar{ margin-top:.3rem; }
+  html.fd3 .page-dehors{ padding:14px 44px 40px; }
+  html.fd3 .page-dehors h1{ font-size:1.9rem; }
+  html.fd3 .page-dehors .rule2{ margin-bottom:8px; }
+  html.fd3 .out-pan{ padding:10px 20px 8px; }
+  html.fd3 .slot{ padding-top:.45rem; padding-bottom:.45rem; }
+  html.fd3 .slot .n{ font-size:1.2rem; }
+  html.fd3 .tl-s{ display:none; }
+  html.fd3 .out-hist{ margin-top:8px; padding-bottom:4px; }
+  html.fd3 .rec .val{ font-size:1.3rem; }
+  html.fd3 .rec .sub{ font-size:.58rem; }
+  html.fd3 .out-hist svg{ height:30px !important; }
 </style>
 </head>
 <body>
@@ -2088,7 +2136,7 @@ function renderHourCurve(el, data, nowH){
   el.innerHTML =
     '<div class="cr" style="' + cols + '">' + idx.map((i, k) => '<div class="hh' + (k ? '' : ' now') + '">' + (k ? String(i % 24).padStart(2, '0') + 'h' : 'Maint.') + '</div>').join('') + '</div>' +
     '<div class="cr ic" style="' + cols + '">' + idx.map(i => '<div>' + wxIcon(H.weathercode[i] || 0, night(i)) + '</div>').join('') + '</div>' +
-    '<svg class="cv" width="' + W + '" height="' + Hh + '" viewBox="0 0 ' + W + ' ' + Hh + '">' + bars + '<path d="' + d + '" fill="none" stroke="#C8A862" stroke-width="1.3"/>' + pts + '</svg>' +
+    '<svg class="cv" width="' + W + '" height="' + Hh + '" viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" style="width:100%">' + bars + '<path d="' + d + '" fill="none" stroke="#C8A862" stroke-width="1.3" vector-effect="non-scaling-stroke"/>' + pts + '</svg>' +
     '<div class="cr" style="' + cols + '">' + temps.map(t => '<div class="tt">' + Math.round(t) + '°</div>').join('') + '</div>';
 }
 
@@ -2134,6 +2182,7 @@ async function updateWeather(){
     try{ window.WXTOM = { tmin: data.daily.temperature_2m_min[1], tmax: data.daily.temperature_2m_max[1], rain: (data.daily.precipitation_sum || [])[1] || 0 }; }catch(e){}
     if(window.ST) window.ST.forecast(data.hourly, cw.windspeed, data.daily);
     if(window.FX) window.FX.apply();
+    if(window.autoFit) setTimeout(window.autoFit, 50);
   }catch(e){
     document.getElementById('desc').textContent = 'météo indisponible';
     document.getElementById('meteoDesc').textContent = 'météo indisponible';
@@ -4854,6 +4903,7 @@ window.OUT = (function(){
       sl.map(s => '<div class="slot"><div><div class="n">' + s.name + '</div><div class="r">' + esc(s.r || '') + '</div></div><div style="text-align:right"><span class="vd ' + s.vd + '">' + s.label + '</span>' + (s.w ? '<div class="w">' + s.w + '</div>' : '') + '</div>' + tline(s) + '</div>').join('');
     const g = $('outGarden'); if(g) g.innerHTML = garden();
     strip();
+    if(window.autoFit) setTimeout(window.autoFit, 50);
     if(SX().isOpen() && SX().el.querySelector('[data-sx^="tab"]')) SX().update(sheetHtml());
   }
 
@@ -5906,6 +5956,40 @@ window.FX = (function(){
     window.RV.refresh();
     const p = $('pnPr'); if(p) p.classList.toggle('on', window.PR.active());
   })();
+})();
+
+
+/* ---------- Ajustement automatique à la hauteur réelle de l'écran ---------- */
+window.autoFit = (function(){
+  const root = document.documentElement;
+  let busy = false;
+  function overI(){
+    const mb = document.querySelector('.meteo-bloc'), pi = document.querySelector('.page-infos'), tr = document.querySelector('.trajets-row');
+    const vh = window.innerHeight;
+    if(mb && mb.scrollHeight > mb.clientHeight + 2) return true;
+    return !!(pi && tr && tr.getBoundingClientRect().bottom > Math.min(pi.getBoundingClientRect().bottom, vh) - 2);
+  }
+  function overD(){
+    const pd = document.getElementById('pageDehors'), oh = document.getElementById('outHist');
+    return !!(pd && oh && oh.getBoundingClientRect().bottom > Math.min(pd.getBoundingClientRect().bottom, window.innerHeight) - 4);
+  }
+  function fit(){
+    if(busy) return; busy = true;
+    try{
+      const h = window.innerHeight;
+      const base = h <= 700 ? 2 : h <= 790 ? 1 : 0;
+      const set = (pre, t) => [1, 2, 3].forEach(i => root.classList.toggle(pre + i, t >= i));
+      set('fit', base);
+      let ti = base; set('fi', ti); while(ti < 3 && overI()){ ti++; set('fi', ti); }
+      let td = base; set('fd', td); while(td < 3 && overD()){ td++; set('fd', td); }
+    } finally { busy = false; }
+  }
+  fit();
+  window.addEventListener('resize', () => setTimeout(fit, 250));
+  window.addEventListener('orientationchange', () => setTimeout(fit, 500));
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  setTimeout(fit, 3000); setInterval(fit, 120000);
+  return fit;
 })();
 
 window.vaIntercept = function(text){
