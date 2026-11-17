@@ -1602,7 +1602,7 @@
   .rm.new{ background:linear-gradient(90deg,rgba(200,168,98,.08),transparent); }
   .rm-empty{ padding:1rem 0; color:var(--ink-faint); font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1.3rem; }
   /* ===== Adaptation à la hauteur réelle de l'écran (Safari en paysage ≈ 690 px) ===== */
-  .meteo-extra{ grid-template-columns:minmax(0,.65fr) minmax(0,1.1fr) minmax(0,.95fr) minmax(0,1.5fr); }
+  .meteo-extra{ grid-template-columns:minmax(0,.78fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.45fr); }
   .chez-grid{ grid-template-columns:minmax(0,.95fr) minmax(0,1.45fr) minmax(0,.95fr) minmax(0,1fr); }
   .cz .lab{ letter-spacing:.2em; }
   .mx .val{ overflow:hidden; text-overflow:ellipsis; }
@@ -1733,7 +1733,7 @@
   html.fi3 .meteo-now .meteo-wind{ display:none; }
   html.fi3 .curve .wi{ width:16px; height:16px; }
   html.fi3 .curve .ic{ margin-top:2px; }
-  html.fi3 .curve svg.cv{ height:28px; }
+  html.fi3 .curve .cv-wrap{ min-height:26px; }
   html.fi3 .curve .tt{ font-size:1.08rem; }
   html.fi3 .chez{ padding-top:4px; gap:3px; }
   html.fi3 .cz .val, html.fi3 .mx .val{ font-size:1.25rem; }
@@ -1817,6 +1817,38 @@
   html.fit2 .ck-h1{ font-size:2.2rem; }
   html.fit2 .ing{ padding:.55rem 0; }
   html.fit2 .ck-prog{ margin-top:12px; }
+
+  /* ===== Case météo : textes agrandis quand il y a de la place (classes mg posées par autoFit) ===== */
+  html.mg1 .page-infos .cz .val, html.mg1 .page-infos .mx .val{ font-size:1.65rem; }
+  html.mg1 .page-infos .cz .lab, html.mg1 .page-infos .mx .lab{ font-size:.74rem; }
+  html.mg1 .page-infos .cz .sub, html.mg1 .page-infos .mx .sub{ font-size:.86rem; }
+  html.mg1 .page-infos .cz .val small{ font-size:.86rem; }
+  html.mg1 .page-infos .chez{ gap:8px; }
+  html.mg2 .page-infos .cz .val, html.mg2 .page-infos .mx .val{ font-size:1.9rem; }
+  html.mg2 .page-infos .cz .lab, html.mg2 .page-infos .mx .lab{ font-size:.8rem; }
+  html.mg2 .page-infos .cz .sub, html.mg2 .page-infos .mx .sub{ font-size:.94rem; }
+  html.mg2 .page-infos .chez{ gap:10px; }
+  html.mg2 .page-infos .sun-arc{ height:22px; }
+  html.mg3 .page-infos .cz .val, html.mg3 .page-infos .mx .val{ font-size:2.15rem; }
+  html.mg3 .page-infos .cz .sub, html.mg3 .page-infos .mx .sub{ font-size:1rem; }
+  html.mg3 .page-infos .chez{ gap:12px; }
+  html.mg3 .page-infos .meteo-extra{ padding-top:14px; }
+
+  .page-infos .sun-row{ gap:.3rem; } .page-infos .sun-row .d{ min-width:0; overflow:hidden; white-space:nowrap; }
+  /* courbe extensible : elle prend la place libre de la case météo */
+  .page-infos .meteo-hours.curve{ flex:1 0 auto; }
+  .curve .cv-wrap{ flex:1 1 auto; min-height:30px; max-height:90px; position:relative; margin:2px 0 3px; }
+  .curve .cv-wrap svg.cv{ position:absolute; left:0; top:0; display:block; margin:0; }
+
+  /* ===== Effacer : liste, menu, recette ===== */
+  .list-clear{ display:flex; gap:.6rem; margin-top:-.4rem; }
+  .list-clear[hidden]{ display:none; }
+  .list-clear button, .rec-del{ font-family:'Jost',sans-serif; font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); border:1px solid #3a3733; background:transparent; border-radius:999px; padding:.45rem .95rem; cursor:pointer; }
+  .list-clear button.armed, .rec-del.armed, .sem-clear.armed, .dayrow .clr.armed{ color:#C88F9A; border-color:rgba(200,143,154,.6); background:rgba(200,143,154,.08); }
+  .rec-del{ margin-left:.4rem; }
+  .dayrow .clr{ background:transparent; border:1px solid transparent; color:var(--ink-faint); font-size:.85rem; width:30px; height:30px; border-radius:50%; cursor:pointer; flex-shrink:0; font-family:'Jost',sans-serif; line-height:1; padding:0; }
+  .dayrow .clr.armed{ width:auto; padding:0 .7rem; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; border-radius:999px; }
+  .sem-clear{ color:var(--ink-faint); }
 </style>
 </head>
 <body>
@@ -1970,6 +2002,7 @@
           <button id="addBtn">+</button>
         </div>
         <button class="restes-btn" id="restesBtn">✦ Idées avec ce qu’il reste</button>
+        <div class="list-clear" id="listClear" hidden><button data-c="checked">Effacer les cochés</button><button data-c="all">Tout effacer</button></div>
         <ul class="item-list" id="itemList"></ul>
       </div>
 
@@ -2034,6 +2067,7 @@
         <div class="sem-btns">
           <button class="sx-btn main" id="semShop">Liste de courses</button>
           <button class="sx-btn" id="semAi">✦ Proposer des idées</button>
+          <button class="sx-btn sem-clear" id="semClear">Vider la semaine</button>
         </div>
         <div class="sem-hint">Tu peux aussi dire : « mets des lasagnes jeudi soir ».</div>
       </div>
@@ -2183,22 +2217,33 @@ function renderHourCurve(el, data, nowH){
   const hOf = s => { const m = String(s || '').match(/T(\d{2})/); return m ? +m[1] : null; };
   const night = i => { const day = i >= 24 ? 1 : 0, h = i % 24, sr = hOf((D.sunrise || [])[day]), ss = hOf((D.sunset || [])[day]); return sr != null && ss != null ? (h < sr || h > ss) : (h < 7 || h > 18); };
   const temps = idx.map(i => H.temperature_2m[i]), pr = idx.map(i => (H.precipitation || [])[i] || 0);
-  let mn = Math.min.apply(null, temps), mx = Math.max.apply(null, temps);
-  if(mx - mn < 3){ const c = (mx + mn) / 2; mn = c - 1.5; mx = c + 1.5; }
   el.className = 'meteo-hours curve';
   const cols = 'grid-template-columns:repeat(' + idx.length + ',1fr)';
-  const W = Math.max(200, el.clientWidth || 520), Hh = 46, n = idx.length;
-  const x = k => (k + .5) / n * W, y = t => 6 + (1 - (t - mn) / (mx - mn)) * (Hh - 16);
-  let d = 'M' + x(0).toFixed(1) + ' ' + y(temps[0]).toFixed(1);
-  for(let k = 1; k < n; k++){ const cx = ((x(k - 1) + x(k)) / 2).toFixed(1); d += ' C' + cx + ' ' + y(temps[k - 1]).toFixed(1) + ' ' + cx + ' ' + y(temps[k]).toFixed(1) + ' ' + x(k).toFixed(1) + ' ' + y(temps[k]).toFixed(1); }
-  const bw = Math.min(22, W / n * .45);
-  const bars = pr.map((p, k) => p > 0.05 ? '<rect x="' + (x(k) - bw / 2).toFixed(1) + '" y="' + (Hh - Math.min(14, 3 + p * 6)).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.min(14, 3 + p * 6).toFixed(1) + '" rx="1.5" fill="#8FB79A" opacity=".5"/>' : '').join('');
-  const pts = temps.map((t, k) => '<circle cx="' + x(k).toFixed(1) + '" cy="' + y(t).toFixed(1) + '" r="' + (k ? 2.4 : 3.6) + '" fill="' + (k ? '#B9B2A4' : '#C8A862') + '"/>').join('');
   el.innerHTML =
     '<div class="cr" style="' + cols + '">' + idx.map((i, k) => '<div class="hh' + (k ? '' : ' now') + '">' + (k ? String(i % 24).padStart(2, '0') + 'h' : 'Maint.') + '</div>').join('') + '</div>' +
     '<div class="cr ic" style="' + cols + '">' + idx.map(i => '<div>' + wxIcon(H.weathercode[i] || 0, night(i)) + '</div>').join('') + '</div>' +
-    '<svg class="cv" width="' + W + '" height="' + Hh + '" viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" style="width:100%">' + bars + '<path d="' + d + '" fill="none" stroke="#C8A862" stroke-width="1.3" vector-effect="non-scaling-stroke"/>' + pts + '</svg>' +
+    '<div class="cv-wrap"></div>' +
     '<div class="cr" style="' + cols + '">' + temps.map(t => '<div class="tt">' + Math.round(t) + '°</div>').join('') + '</div>';
+  el._curve = { temps, pr };
+  drawHourCurve(el);
+}
+// trace la courbe à la taille réelle de sa zone (qui s'agrandit quand il y a de la place)
+function drawHourCurve(el){
+  el = el || document.getElementById('meteoHours');
+  const wrap = el && el.querySelector('.cv-wrap'), c = el && el._curve;
+  if(!wrap || !c) return;
+  const temps = c.temps, pr = c.pr, n = temps.length;
+  const W = Math.max(200, wrap.clientWidth || 520), Hh = Math.max(30, wrap.clientHeight || 46);
+  let mn = Math.min.apply(null, temps), mx = Math.max.apply(null, temps);
+  if(mx - mn < 3){ const m = (mx + mn) / 2; mn = m - 1.5; mx = m + 1.5; }
+  const barMax = Math.min(18, Hh * .3);
+  const x = k => (k + .5) / n * W, y = t => 6 + (1 - (t - mn) / (mx - mn)) * (Hh - 12 - barMax * .5);
+  let d = 'M' + x(0).toFixed(1) + ' ' + y(temps[0]).toFixed(1);
+  for(let k = 1; k < n; k++){ const cx = ((x(k - 1) + x(k)) / 2).toFixed(1); d += ' C' + cx + ' ' + y(temps[k - 1]).toFixed(1) + ' ' + cx + ' ' + y(temps[k]).toFixed(1) + ' ' + x(k).toFixed(1) + ' ' + y(temps[k]).toFixed(1); }
+  const bw = Math.min(22, W / n * .45);
+  const bars = pr.map((p, k) => { if(p <= 0.05) return ''; const h = Math.min(barMax, 3 + p * 6); return '<rect x="' + (x(k) - bw / 2).toFixed(1) + '" y="' + (Hh - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5" fill="#8FB79A" opacity=".5"/>'; }).join('');
+  const pts = temps.map((t, k) => '<circle cx="' + x(k).toFixed(1) + '" cy="' + y(t).toFixed(1) + '" r="' + (k ? 2.4 : 3.6) + '" fill="' + (k ? '#B9B2A4' : '#C8A862') + '"/>').join('');
+  wrap.innerHTML = '<svg class="cv" width="' + W + '" height="' + Hh + '" viewBox="0 0 ' + W + ' ' + Hh + '">' + bars + '<path d="' + d + '" fill="none" stroke="#C8A862" stroke-width="1.3"/>' + pts + '</svg>';
 }
 
 const WEATHER_ICONS = {
@@ -2513,6 +2558,8 @@ async function doSaveItems(){
 }
 
 function renderItems(){
+  const lcb = document.getElementById('listClear');
+  if(lcb){ lcb.hidden = !items.length; const cb = lcb.querySelector('[data-c="checked"]'); if(cb) cb.style.display = items.some(i => i.checked) ? '' : 'none'; }
   if(!items.length){
     itemListEl.innerHTML = '<li style="color:var(--ink-faint);font-style:italic;font-family:\'Cormorant Garamond\',serif">Liste vide</li>';
     return;
@@ -2907,6 +2954,7 @@ async function fetchRecette(){
       <div class="rec-actions">
         <button class="rec-cook" id="recCook" disabled>▶ Mode cuisine</button>
         <a class="rec-open" href="${eh(current.url)}" target="_blank">↗ Ouvrir la recette</a>
+        <button class="rec-del" id="recDel">✕ Retirer</button>
         <span class="rec-cook-note" id="recCookNote"></span>
       </div>
     `;
@@ -3235,7 +3283,8 @@ dotsEl.forEach(d=>{ d.addEventListener('click',()=>goToPage(parseInt(d.dataset.p
       timers: timers.map(t => ({ label: t.label, remaining: t.remaining, running: t.isRunning, done: t.isDone })).slice(0, 10),
       semaine: window.mnContext ? window.mnContext() : [],
       cuisine: window.ckContext ? window.ckContext() : null,
-      station: window.ST ? window.ST.context() : null
+      station: window.ST ? window.ST.context() : null,
+      actus: Array.from(document.querySelectorAll('.news-item .news-text')).map(e => e.textContent.trim()).filter(t => t && !/indisponibles|Chargement/.test(t)).slice(0, 8)
     };
   }
 
@@ -3325,6 +3374,19 @@ dotsEl.forEach(d=>{ d.addEventListener('click',()=>goToPage(parseInt(d.dataset.p
           createTimer(secs, clean(a.label, 30) || 'Minuteur');
           summary.push('Minuteur · ' + fmtDur(secs));
         }
+      } else if(a.type === 'clear_items'){
+        const n = items.length;
+        items = a.checked_only ? items.filter(i => !i.checked) : [];
+        if(items.length !== n){ listChanged = true; summary.push(a.checked_only ? 'Cochés effacés' : 'Liste vidée'); }
+      } else if(a.type === 'clear_menu'){
+        if(window.MN){
+          const ds = (Array.isArray(a.dates) ? a.dates : []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+          if(ds.length){ ds.forEach(d => window.MN.set(d, null)); summary.push('Menu · ' + ds.length + ' jour' + (ds.length > 1 ? 's' : '') + ' effacé' + (ds.length > 1 ? 's' : '')); }
+          else { window.MN.clearWeek(); summary.push('Menu de la semaine effacé'); }
+        }
+      } else if(a.type === 'stop_timer' || a.type === 'pause_timer' || a.type === 'resume_timer'){
+        const r = window.TM ? window.TM.act(a.type.replace('_timer', ''), clean(a.label || '', 30)) : null;
+        if(r) summary.push(r);
       } else if(a.type === 'go_to_page'){
         const idx = PAGE_IDS[norm(a.page).replace(/ /g, '')];
         if(idx !== undefined) goToPage(idx);
@@ -4201,7 +4263,7 @@ window.MN = (function(){
       const cls = 'dayrow' + (k === today ? ' today' : '') + (e ? '' : ' empty') + (k < today ? ' past' : '');
       return '<div class="' + cls + '" data-k="' + k + '"><div class="d"><small>' + JABR[i] + '</small><b>' + d.getDate() + '</b></div>' +
         '<div class="r"><div class="a">' + (e ? esc(e.title) : 'Pas encore de dîner') + '</div>' + (e ? '<div class="m">' + esc(metaOf(e)) + '</div>' : '') + '</div>' +
-        '<div class="go">' + (e ? '›' : '+') + '</div></div>';
+        (e ? '<button class="clr" data-clr="' + k + '" aria-label="Effacer">✕</button>' : '') + '<div class="go">' + (e ? '›' : '+') + '</div></div>';
     }).join('');
     const planned = days.filter(d => menu[isoDay(d)]);
     const withData = planned.filter(d => { const e = menu[isoDay(d)]; return e.url || (e.ing && toList(e.ing).length); }).length;
@@ -4331,12 +4393,17 @@ window.MN = (function(){
 
   $('semPrev').addEventListener('click', () => { offset = Math.max(-4, offset - 1); render(); });
   $('semNext').addEventListener('click', () => { offset = Math.min(8, offset + 1); render(); });
-  $('semDays').addEventListener('click', e => { const r = e.target.closest('.dayrow'); if(r) openPicker(r.dataset.k); });
+  $('semDays').addEventListener('click', e => {
+    const c = e.target.closest('.clr');
+    if(c){ e.stopPropagation(); confirmTap(c, () => setDay(c.dataset.clr, null)); return; }
+    const r = e.target.closest('.dayrow'); if(r) openPicker(r.dataset.k);
+  });
+  function clearWeek(){ let n = 0; weekDays().forEach(d => { const k = isoDay(d); if(menu[k]){ delete menu[k]; saveDay(k); n++; } }); render(); return n; }
   $('semShop').addEventListener('click', shop);
   $('semAi').addEventListener('click', propose);
   load();
   setInterval(load, 1000 * 60 * 10);
-  return { apply, context, render };
+  return { apply, context, render, set: setDay, get: k => menu[k], clearWeek };
 })();
 window.mnContext = () => window.MN.context();
 
@@ -6034,6 +6101,14 @@ window.autoFit = (function(){
     if(mb && mb.scrollHeight > mb.clientHeight + 2) return true;
     return !!(pi && tr && tr.getBoundingClientRect().bottom > Math.min(pi.getBoundingClientRect().bottom, vh) - 2);
   }
+  function roomI(){
+    // place libre = la zone de la courbe dépasse nettement sa hauteur minimale, et rien ne déborde en largeur
+    const w = document.querySelector('#meteoHours .cv-wrap'), mb = document.querySelector('.meteo-bloc');
+    if(!w || !mb || mb.scrollHeight > mb.clientHeight + 1) return false;
+    const wide = Array.from(document.querySelectorAll('.page-infos .cz .val, .page-infos .mx .val'))
+      .some(e => e.scrollWidth > e.clientWidth + 1);
+    return !wide && w.clientHeight >= 58;
+  }
   function overD(){
     const pd = document.getElementById('pageDehors'), oh = document.getElementById('outHist');
     return !!(pd && oh && oh.getBoundingClientRect().bottom > Math.min(pd.getBoundingClientRect().bottom, window.innerHeight) - 4);
@@ -6046,6 +6121,10 @@ window.autoFit = (function(){
       const set = (pre, t) => [1, 2, 3].forEach(i => root.classList.toggle(pre + i, t >= i));
       set('fit', base);
       let ti = base; set('fi', ti); while(ti < 3 && overI()){ ti++; set('fi', ti); }
+      // place libre dans la case météo : on agrandit « Chez toi » et la ligne du bas
+      [1, 2, 3].forEach(i => root.classList.remove('mg' + i));
+      for(let g = 1; g <= 3; g++){ root.classList.add('mg' + g); if(overI() || !roomI()){ root.classList.remove('mg' + g); break; } }
+      if(typeof drawHourCurve === 'function') drawHourCurve();
       let td = base; set('fd', td); while(td < 3 && overD()){ td++; set('fd', td); }
     } finally { busy = false; }
   }
@@ -6079,6 +6158,197 @@ window.autoFit = (function(){
   window.addEventListener('resize', () => setTimeout(fitCk, 250));
 })();
 
+
+/* ---------- Minuteurs à la voix : arrêter, mettre en pause, relancer (sans passer par l'IA) ---------- */
+window.TM = (function(){
+  const nrm = window.NX.nrm;
+  function find(label, wantRunning){
+    const pool = timers.filter(t => !t.isDone);
+    if(!pool.length) return [];
+    const l = nrm(label || '');
+    if(/\btous\b|\btoutes\b/.test(l)) return pool;
+    if(l){
+      const hit = pool.filter(t => { const n = nrm(t.label); return n && (l.indexOf(n) >= 0 || n.indexOf(l) >= 0 || n.split(' ').some(w => w.length > 3 && l.indexOf(w.replace(/s$/, '')) >= 0)); });
+      if(hit.length) return hit;
+    }
+    if(pool.length === 1) return pool;
+    const st = pool.filter(t => wantRunning == null || t.isRunning === wantRunning);
+    return st.length === 1 ? st : null;      // ambigu
+  }
+  const lab = list => list.map(t => t.label).join(', ');
+  function act(kind, label){
+    const list = find(label, kind === 'resume' ? false : kind === 'pause' ? true : null);
+    if(list === null) return null;
+    if(!list.length) return '';
+    list.forEach(t => {
+      if(kind === 'stop') deleteTimer(t.id);
+      else if(kind === 'pause' && t.isRunning) toggleTimer(t.id);
+      else if(kind === 'resume' && !t.isRunning) toggleTimer(t.id);
+    });
+    return (kind === 'stop' ? 'Arrêté · ' : kind === 'pause' ? 'En pause · ' : 'Relancé · ') + lab(list);
+  }
+  function voice(t){
+    const isTimer = /\b(minuteurs?|minuterie|chrono|chronometres?|timers?|compte a rebours)\b/.test(t);
+    const names = timers.filter(x => !x.isDone).map(x => nrm(x.label)).filter(Boolean);
+    const named = names.some(n => t.indexOf(n) >= 0 || n.split(' ').some(w => w.length > 3 && t.indexOf(w.replace(/s$/, '')) >= 0));
+    if(!isTimer && !named) return null;
+    let kind = null;
+    if(/\b(arrete|arretes|stop|stoppe|coupe|annule|supprime|enleve|efface|retire)\b/.test(t)) kind = 'stop';
+    else if(/\b(pause)\b/.test(t)) kind = 'pause';
+    else if(/\b(reprends|reprend|relance|relancer|redemarre|continue)\b/.test(t)) kind = 'resume';
+    if(!kind) return null;
+    if(!timers.some(x => !x.isDone)) return { reply: 'Il n’y a aucun minuteur en cours.' };
+    const list = find(t, kind === 'resume' ? false : kind === 'pause' ? true : null);
+    if(list === null) return { reply: 'Lequel ? Tu as ' + timers.filter(x => !x.isDone).map(x => x.label).join(', ') + '.' };
+    act(kind, t);
+    const n = list.length, names2 = lab(list);
+    return { reply: kind === 'stop' ? (n > 1 ? 'J’ai arrêté les minuteurs ' + names2 + '.' : 'Minuteur ' + names2 + ' arrêté.') : kind === 'pause' ? 'Minuteur ' + names2 + ' en pause.' : 'Minuteur ' + names2 + ' relancé.' };
+  }
+  return { act, voice };
+})();
+
+/* ---------- Commandes vocales directes (sans IA) : liste, minuteurs, pages, menu ---------- */
+window.VC = (function(){
+  const nrm = window.NX.nrm, cap = window.NX.cap;
+  const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const NUM = { 'une':1, 'un':1, 'deux':2, 'trois':3, 'quatre':4, 'cinq':5, 'six':6, 'sept':7, 'huit':8, 'neuf':9, 'dix':10, 'onze':11, 'douze':12, 'treize':13, 'quatorze':14, 'quinze':15, 'seize':16, 'vingt':20, 'vingt cinq':25, 'trente':30, 'quarante':40, 'quarante cinq':45, 'cinquante':50, 'soixante':60 };
+  const num = w => { w = String(w || '').trim(); return /^\d+([.,]\d+)?$/.test(w) ? parseFloat(w.replace(',', '.')) : (NUM[w] || null); };
+  const iso = d => window.NX.isoDay(d);
+  function dayKey(t){
+    const now = new Date();
+    if(/\b(ce soir|aujourd hui|ce midi)\b/.test(t)) return iso(now);
+    if(/\bapres demain\b/.test(t)){ const d = new Date(); d.setDate(d.getDate() + 2); return iso(d); }
+    if(/\bdemain\b/.test(t)){ const d = new Date(); d.setDate(d.getDate() + 1); return iso(d); }
+    for(let i = 0; i < 7; i++){
+      if(new RegExp('\\b' + JOURS[i] + '\\b').test(t)){
+        const d = new Date(), cur = (d.getDay() + 6) % 7;
+        let add = (i - cur + 7) % 7;
+        if(/\bprochain\b/.test(t) && add === 0) add = 7;
+        d.setDate(d.getDate() + add); return iso(d);
+      }
+    }
+    return null;
+  }
+  const dayName = k => { const d = new Date(k + 'T12:00:00'); return k === iso(new Date()) ? 'ce soir' : JOURS[(d.getDay() + 6) % 7]; };
+  // nettoie un nom d'article dit à la voix (garde les accents)
+  function cleanItem(s){
+    s = String(s).trim().replace(/^(?:du|de la|de l['’]|des|de|d['’]|le|la|les|l['’]|un|une|quelques|un peu de|encore)\s+/i, '').replace(/[.?!]+$/, '').trim();
+    return s ? cap(s) : '';
+  }
+  function splitItems(s){
+    return s.split(/\s*,\s*|\s+et\s+|\s+puis\s+/i).map(cleanItem).filter(x => x && x.length <= 40);
+  }
+  function save(){ saveItems(); renderItems(); }
+  const et = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1] : (a[0] || '');
+  function idxOf(name){ const n = nrm(name).replace(/s\b/g, ''); return items.findIndex(i => { const m = nrm(i.text).replace(/s\b/g, ''); return m === n || m.indexOf(n) >= 0 || n.indexOf(m) >= 0; }); }
+
+  function voice(t, raw){
+    const low = String(raw || '').trim();
+    // ---- liste de courses : vider
+    if(/\b(vide|vider|efface|effacer|supprime|supprimer|nettoie|reinitialise|enleve|retire)\b.*\b(liste|courses|articles? coches?|coches)\b/.test(t)){
+      if(/\bcoche/.test(t)){ const n = items.filter(i => i.checked).length; items = items.filter(i => !i.checked); save(); return { reply: n ? 'J’ai effacé les ' + n + ' articles cochés.' : 'Aucun article n’était coché.' }; }
+      const n = items.length; items = []; save(); return { reply: n ? 'La liste de courses est vide.' : 'La liste était déjà vide.' };
+    }
+    // ---- menu de la semaine : effacer
+    if(/\b(efface|effacer|supprime|supprimer|enleve|retire|annule|vide|vider)\b.*\b(menu|menus|repas|diner|diners|semaine)\b/.test(t) && window.MN){
+      if(/\b(semaine|tous|tout|menus|repas de la semaine)\b/.test(t) && !dayKey(t)){ const n = window.MN.clearWeek(); return { reply: n ? 'J’ai effacé les dîners de la semaine.' : 'Il n’y avait aucun dîner cette semaine.' }; }
+      const k = dayKey(t);
+      if(k){ const had = window.MN.get(k); window.MN.set(k, null); return { reply: had ? 'Le dîner de ' + dayName(k) + ' est effacé.' : 'Il n’y avait rien de prévu ' + dayName(k) + '.' }; }
+    }
+    // ---- menu : inscrire un plat un jour (« mets des lasagnes jeudi »)
+    if(window.MN && /\b(mets|met|prevois|prevoit|note|inscris|ajoute|on mange|on fait|ce sera)\b/.test(t) && dayKey(t) && !/\bliste\b/.test(t)){
+      const m = low.match(/(?:mets|met|prévois|prévoit|note|inscris|ajoute|on mange|on fait|ce sera)\s+(?:au menu\s+)?(.+?)\s+(?:pour\s+|au dîner de\s+|le\s+)?(?:ce soir|aujourd['’]hui|après-demain|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/i);
+      if(m){
+        const title = cleanItem(m[1].replace(/\s+(?:au|pour le)\s+(?:dîner|diner|repas)$/i, ''));
+        const k = dayKey(t);
+        if(title && k){ window.MN.set(k, { title }); return { reply: 'C’est noté : ' + title.toLowerCase() + ' ' + (dayName(k) === 'ce soir' ? 'ce soir' : dayName(k)) + '.' }; }
+      }
+    }
+    // ---- liste : retirer
+    let m = low.match(/^(?:enl[eè]ve|retire|supprime|efface|barre|ôte|ote)\s+(.+?)\s+(?:de|sur|dans)\s+(?:la|ma)\s+liste/i);
+    if(m){
+      const done = [];
+      splitItems(m[1]).forEach(n => { const i = idxOf(n); if(i >= 0){ done.push(items[i].text); items.splice(i, 1); } });
+      if(done.length){ save(); return { reply: 'J’ai retiré ' + et(done).toLowerCase() + ' de la liste.' }; }
+      return { reply: 'Je ne trouve pas ça sur la liste.' };
+    }
+    // ---- liste : cocher
+    m = low.match(/^(?:coche|j['’]ai pris|j['’]ai acheté|c['’]est pris pour)\s+(.+)$/i);
+    if(m){
+      const done = [];
+      splitItems(m[1].replace(/\s+(?:sur|dans)\s+(?:la|ma)\s+liste.*$/i, '')).forEach(n => { const i = idxOf(n); if(i >= 0 && !items[i].checked){ items[i].checked = true; done.push(items[i].text); } });
+      if(done.length){ save(); return { reply: 'Coché : ' + done.join(', ').toLowerCase() + '.' }; }
+    }
+    // ---- liste : ajouter
+    m = low.match(/^(?:ajoute|rajoute|mets|met|note|inscris)\s+(.+?)\s+(?:à|a|sur|dans)\s+(?:la|ma)\s+liste(?:\s+de\s+courses)?\s*[.!]?$/i)
+      || low.match(/^(?:ajoute|rajoute)\s+(.+?)\s*[.!]?$/i)
+      || low.match(/^(?:il (?:me|nous) faut|il faut acheter|il manque|on n['’]a plus de|je n['’]ai plus de)\s+(.+?)\s*[.!]?$/i);
+    if(m && !/\bminuteur|chrono|rappel|reveil|menu\b/.test(t)){
+      const names = splitItems(m[1]).filter(n => idxOf(n) < 0 || items[idxOf(n)].checked);
+      if(names.length){
+        names.forEach(n => { const i = idxOf(n); if(i >= 0) items.splice(i, 1); items.push({ text: n, checked: false }); });
+        save();
+        return { reply: 'C’est noté : ' + et(names).toLowerCase() + (names.length > 1 ? ' sont' : ' est') + ' sur ta liste.' };
+      }
+      return { reply: 'C’est déjà sur ta liste.' };
+    }
+    // ---- minuteur : lancer
+    if(/\b(minuteur|minuterie|chrono|timer|compte a rebours)\b/.test(t) && !/\b(arrete|stop|stoppe|annule|supprime|pause|relance|reprends|combien|reste)\b/.test(t)){
+      const q = t.replace(/\bune demi heure\b/, '30 minutes').replace(/\bun quart d heure\b/, '15 minutes').replace(/\bune heure et demie\b/, '90 minutes');
+      const mm = q.match(/(\d+|une|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt cinq|vingt|trente|quarante cinq|quarante|cinquante|soixante)\s*(heures?|h|minutes?|min|mn|secondes?|sec|s)\b(?:\s*(?:et\s*)?(\d+|trente|quinze|dix|vingt|cinq)\s*(?:minutes?|min|secondes?)?)?/);
+      if(mm){
+        const v = num(mm[1]), u = mm[2], extra = mm[3] ? num(mm[3]) : 0;
+        let secs = /^h/.test(u) ? v * 3600 + (extra || 0) * 60 : /^s/.test(u) ? v : v * 60 + (extra || 0);
+        secs = Math.round(Math.min(6 * 3600, secs));
+        if(secs >= 1){
+          const lm = low.match(/\b(?:pour|sur)\s+(?:les?\s+|la\s+|l['’]\s*|mes\s+)?([a-zà-ÿ' -]{2,30})\s*$/i);
+          const label = lm ? cleanItem(lm[1]) : 'Minuteur';
+          createTimer(secs, label);
+          return { reply: 'C’est parti : ' + (label !== 'Minuteur' ? label.toLowerCase() + ', ' : '') + fmtDurSpoken(secs) + '.' };
+        }
+      }
+    }
+    // ---- aller sur une page
+    if(/\b(va (?:sur|a|dans|aux?)|vas (?:sur|a)|aller (?:sur|a)|affiche|montre|ouvre|passe (?:sur|a|aux?)|retourne|reviens)\b/.test(t)){
+      const P = [[/\b(infos?|actualites|meteo du jour)\b/, 0], [/\b(dehors|jardin|station)\b/, 1], [/\b(galerie|photos?|accueil)\b/, 2], [/\b(courses|liste|minuteurs?|aujourd hui)\b/, 3], [/\b(semaine|menu|menus|repas)\b/, 4], [/\b(recette)\b/, 5]];
+      for(const [re, i] of P){ if(re.test(t)){ goToPage(i); return { silent: true, reply: '' }; } }
+    }
+    return null;
+  }
+  function fmtDurSpoken(s){
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return [h ? h + (h > 1 ? ' heures' : ' heure') : '', m ? m + (m > 1 ? ' minutes' : ' minute') : '', sec ? sec + ' secondes' : ''].filter(Boolean).join(' ');
+  }
+  return { voice };
+})();
+
+/* ---------- Effacer ce qui est affiché : liste, menu, recette ---------- */
+function confirmTap(btn, fn){
+  if(btn.dataset.armed){ clearTimeout(+btn.dataset.armed); delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = btn.dataset.lab; fn(); return; }
+  btn.dataset.lab = btn.textContent; btn.textContent = 'Confirmer ?'; btn.classList.add('armed');
+  btn.dataset.armed = String(setTimeout(() => { delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = btn.dataset.lab; }, 3500));
+}
+(function(){
+  const lc = document.getElementById('listClear');
+  if(lc) lc.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    confirmTap(b, () => { items = b.dataset.c === 'checked' ? items.filter(i => !i.checked) : []; saveItems(); renderItems(); });
+  });
+  const sc = document.getElementById('semClear');
+  if(sc) sc.addEventListener('click', () => confirmTap(sc, () => window.MN.clearWeek()));
+  document.addEventListener('click', e => {
+    const b = e.target.closest('#recDel'); if(!b) return;
+    confirmTap(b, async () => {
+      try{
+        const d = await (await fetch(FIREBASE_URL + '/recette.json', { cache: 'no-store' })).json();
+        const h = (d && d.history) || []; h.pop();
+        await fetch(FIREBASE_URL + '/recette.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history: h }) });
+      }catch(err){}
+      fetchRecette();
+    });
+  });
+})();
+
 window.vaIntercept = function(text){
   const t = window.NX.nrm(text);
   if(window.AL.isOpen() && /\b(stop|arrete|arretes|silence|tais toi|coupe|c est bon|ok)\b/.test(t)){
@@ -6091,6 +6361,10 @@ window.vaIntercept = function(text){
   }
   const c = window.CK.voice(t);
   if(c) return c;
+  const tmv = window.TM ? window.TM.voice(t) : null;
+  if(tmv) return tmv;
+  const vc = window.VC ? window.VC.voice(t, text) : null;
+  if(vc) return vc;
   if(/\bbonne nuit\b/.test(t)) return { silent: true, run: () => window.BN.open(true) };
   const rv = window.RV ? window.RV.voice(t) : null;
   if(rv) return rv;
