@@ -5107,7 +5107,10 @@ window.NI = (function(){
     if(!el) return;
     const d = new Date(), now = Date.now();
     $('nightClock').innerHTML = pad(d.getHours()) + '<span>:</span>' + pad(d.getMinutes());
-    const on = !!(((window.ST && window.ST.isNight()) || now < forcedUntil) && now > wakeUntil);
+    let sched = false;
+    try{ sched = window.ST ? window.ST.isNight() : false; }catch(e){}
+    if(!window.ST){ try{ const c = JSON.parse(localStorage.getItem('stationCfg_v1')) || {}, n = c.night || { on:true, from:22, to:7 }, hr = d.getHours(); sched = !!n.on && (n.from > n.to ? (hr >= n.from || hr < n.to) : (hr >= n.from && hr < n.to)); }catch(e){} }
+    const on = !!((sched || now < forcedUntil) && now > wakeUntil);
     if(on) $('nightLine').innerHTML = line();
     el.classList.toggle('show', on);
   }
@@ -5373,6 +5376,15 @@ window.SK = (function(){
       const j = await (await fetch(FN_BASE + 'ciel', { cache: 'no-store' })).json();
       if(j && j.ok){ tle = j; try{ localStorage.setItem('tle_v1', JSON.stringify({ t: Date.now(), l1: j.line1, l2: j.line2 })); }catch(e){} }
     }catch(e){}
+    if(!tle){
+      const direct = [
+        async () => { const t = await (await fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle')).text(); const L = t.split(/\r?\n/).map(x => x.trim()).filter(Boolean), i = L.findIndex(x => x.startsWith('1 ')); return i >= 0 ? { line1: L[i], line2: L[i + 1] } : null; },
+        async () => { const j = await (await fetch('https://tle.ivanstanojevic.me/api/tle/25544')).json(); return j && j.line1 ? { line1: j.line1, line2: j.line2 } : null; }
+      ];
+      for(const f of direct){
+        try{ const r = await f(); if(r && /^1 25544/.test(r.line1) && r.line2){ tle = r; localStorage.setItem('tle_v1', JSON.stringify({ t: Date.now(), l1: r.line1, l2: r.line2 })); break; } }catch(e){}
+      }
+    }
     if(!tle){ try{ const c = JSON.parse(localStorage.getItem('tle_v1')); if(c && Date.now() - c.t < 5 * 86400000) tle = { line1: c.l1, line2: c.l2 }; }catch(e){} }
     if(tle && SAT){ try{ satrec = SAT.twoline2satrec(tle.line1, tle.line2); }catch(e){ satrec = null; } }
     calc(true);
@@ -6509,6 +6521,7 @@ window.vaIntercept = function(text){
   if(vc) return vc;
   const wv = window.WXV ? window.WXV.voice(t, text) : null;
   if(wv) return wv;
+  if(/\b(mode nuit|ecran de nuit|écran de nuit|eteins l.ecran|éteins l.écran|mets? (?:l.ecran|l.écran) en veille)\b/.test(t)) return { silent: true, run: () => { if(window.NI) window.NI.force(); } };
   if(/\bbonne nuit\b/.test(t)) return { silent: true, run: () => window.BN.open(true) };
   const rv = window.RV ? window.RV.voice(t) : null;
   if(rv) return rv;
